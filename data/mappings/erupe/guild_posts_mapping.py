@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class GuildPosts(Base):
     """Guild Posts table object"""
     __tablename__ = "guild_posts"
+    id: Mapped[int] = mapped_column(primary_key=True)

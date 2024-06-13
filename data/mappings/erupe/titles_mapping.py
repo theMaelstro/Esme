@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class Titles(Base):
     """Titles table object"""
     __tablename__ = "titles"
+    id: Mapped[int] = mapped_column(primary_key=True)

@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class GuildHunts(Base):
     """Guild Hunts table object"""
     __tablename__ = "guild_hunts"
+    id: Mapped[int] = mapped_column(primary_key=True)

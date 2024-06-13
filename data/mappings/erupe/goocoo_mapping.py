@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class Goocoo(Base):
     """Goocoo table object"""
     __tablename__ = "goocoo"
+    id: Mapped[int] = mapped_column(primary_key=True)

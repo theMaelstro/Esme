@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class LoginBoost(Base):
     """Login Boost table object"""
     __tablename__ = "login_boost"
+    id: Mapped[int] = mapped_column(primary_key=True)

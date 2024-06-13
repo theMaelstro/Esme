@@ -1,2 +1,2 @@
-from .tables import DiscordLink, Servers
+from .tables import DiscordLink
 from .views import GuildCharactersByGuildId

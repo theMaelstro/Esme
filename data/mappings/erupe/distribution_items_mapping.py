@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class DistributionItems(Base):
     """Distribution Items table object"""
     __tablename__ = "distribution_items"
+    id: Mapped[int] = mapped_column(primary_key=True)

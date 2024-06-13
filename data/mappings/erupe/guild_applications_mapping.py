@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class GuildApplications(Base):
     """Guild Applications table object"""
     __tablename__ = "guild_applications"
+    id: Mapped[int] = mapped_column(primary_key=True)
