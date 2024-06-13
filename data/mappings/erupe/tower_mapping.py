@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class Tower(Base):
     """Tower table object"""
     __tablename__ = "tower"
+    id: Mapped[int] = mapped_column(primary_key=True)

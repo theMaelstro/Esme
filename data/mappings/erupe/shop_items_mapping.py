@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class ShopItems(Base):
     """Shop Items table object"""
     __tablename__ = "shop_items"
+    id: Mapped[int] = mapped_column(primary_key=True)

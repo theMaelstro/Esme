@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class UserBinary(Base):
     """User Binary table object"""
     __tablename__ = "user_binary"
+    id: Mapped[int] = mapped_column(primary_key=True)

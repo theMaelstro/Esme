@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class TrendWeapons(Base):
     """Trend Weapons table object"""
     __tablename__ = "trend_weapons"
+    id: Mapped[int] = mapped_column(primary_key=True)

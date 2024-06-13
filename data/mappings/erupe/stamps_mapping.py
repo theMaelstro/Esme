@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class Stamps(Base):
     """Stamps table object"""
     __tablename__ = "stamps"
+    id: Mapped[int] = mapped_column(primary_key=True)

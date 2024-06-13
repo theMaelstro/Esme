@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class KillLogs(Base):
     """Kill Logs table object"""
     __tablename__ = "kill_logs"
+    id: Mapped[int] = mapped_column(primary_key=True)

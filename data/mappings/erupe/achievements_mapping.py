@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class Achievements(Base):
     """Achievements table object"""
     __tablename__ = "achievements"
+    id: Mapped[int] = mapped_column(primary_key=True)

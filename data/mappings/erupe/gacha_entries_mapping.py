@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class GachaEntries(Base):
     """Gacha Entries table object"""
     __tablename__ = "gacha_entries"
+    id: Mapped[int] = mapped_column(primary_key=True)

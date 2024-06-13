@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class EventQuests(Base):
     """Event Quests table object"""
     __tablename__ = "event_quests"
+    id: Mapped[int] = mapped_column(primary_key=True)

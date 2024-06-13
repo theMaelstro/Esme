@@ -7,3 +7,4 @@ from ..base_mapping import Base
 class Mail(Base):
     """Mail table object"""
     __tablename__ = "mail"
+    id: Mapped[int] = mapped_column(primary_key=True)

@@ -34,6 +34,7 @@ from .login_boost_mapping import LoginBoost
 from .mail_mapping import Mail
 from .rengoku_score_mapping import RengokuScore
 from .scenario_counter_mapping import ScenarioCounter
+from .servers_mapping import Servers
 from .shop_items_bought_mapping import ShopItemsBought
 from .shop_items_mapping import ShopItems
 from .sign_sessions_mapping import SignSessions
