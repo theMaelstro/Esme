@@ -20,36 +20,43 @@ class Road(commands.Cog):
         file: discord.Attachment
     ):
         """Check rengoku save file."""
-        # initialize the embed.
-        embed = discord.Embed(
-            title=f"Results for {hash(file.url)}.bin:",
-            color=0x00ff00
-        )
-        try: # catch errors
-            # save the file to a location in an accessible directory.
-            await self.writefile(file)
-
-            # obtain data from previously saved file.
-            hex_main = await self.readfile(file)
-
-            # read the values from the previously obtained data.
-            mainv = await self.readvalues(hex_main)
-
-            # add field for floors.
-            embed.add_field(name="Highest floor reached:", value=f"{mainv[1]:,}")
-
-            # add field for points.
-            embed.add_field(name="Highest points earned:", value=f"{mainv[2]:,}")
-
-        # logs the error.
-        except Exception as e:
-            # user gets informed of an incorrect file being uploaded.
-            embed.add_field(
-                name="Error",
-                value=f"Error: {e}"
+        if interaction.user.id in CONFIG.discord.admin_user_ids:
+            # initialize the embed.
+            embed = discord.Embed(
+                title=f"Results for {hash(file.url)}.bin:",
+                color=0x00ff00
             )
-        # sends the data back to the user.
-        await interaction.response.send_message(embed=embed) 
+            try: # catch errors
+                # save the file to a location in an accessible directory.
+                await self.writefile(file)
+
+                # obtain data from previously saved file.
+                hex_main = await self.readfile(file)
+
+                # read the values from the previously obtained data.
+                mainv = await self.readvalues(hex_main)
+
+                # add field for floors.
+                embed.add_field(name="Highest floor reached:", value=f"{mainv[1]:,}")
+
+                # add field for points.
+                embed.add_field(name="Highest points earned:", value=f"{mainv[2]:,}")
+
+            # logs the error.
+            except Exception as e:
+                # user gets informed of an incorrect file being uploaded.
+                embed.add_field(
+                    name="Error",
+                    value=f"Error: {e}"
+                )
+            # sends the data back to the user.
+            await interaction.response.send_message(embed=embed)
+
+        else:
+            await interaction.response.send_message(
+                f"You are not allowed to use this command {interaction.user.mention}.",
+                ephemeral=True
+            )
 
     # reads a file and turns it into a hexdump.
     async def readfile(self, file):
