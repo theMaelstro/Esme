@@ -9,7 +9,7 @@ from settings import CONFIG
 from data import UserBuilder, DiscordBuilder
 from core import UsernameIncorrect, UnmatchingPasswords
 
-class BindAccountCredentials(commands.Cog):
+class AccountBindCredentials(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
         self.user_builder = UserBuilder()
@@ -30,10 +30,14 @@ class BindAccountCredentials(commands.Cog):
         return False
 
     @app_commands.command(
-        name="bind_account_credentials",
+        name="account_bind_credentials",
         description="Bind user account by ingame credentials."
     )
-
+    @app_commands.checks.cooldown(
+    1,
+    CONFIG.commands.realm.cooldown,
+    key=lambda i: (i.guild_id, i.user.id)
+    )
     async def bind_account_credentials(
         self,
         interaction: discord.Interaction,
@@ -97,4 +101,4 @@ class BindAccountCredentials(commands.Cog):
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
-    await client.add_cog(BindAccountCredentials(client))
+    await client.add_cog(AccountBindCredentials(client))
