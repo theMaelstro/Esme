@@ -6,7 +6,7 @@ from discord.ext import commands
 from discord import app_commands
 
 from settings import CONFIG
-from  data import GuildBuilder
+from data import GuildBuilder
 from core.view.pagination import Pagination
 
 class Guilds(commands.Cog):

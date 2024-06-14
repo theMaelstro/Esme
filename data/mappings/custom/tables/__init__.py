@@ -1,1 +1,1 @@
-from .discordlink_mapping import DiscordLink
+from .discord_mapping import Discord

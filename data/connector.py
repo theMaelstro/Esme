@@ -9,6 +9,8 @@ from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine
 
+# TODO: Move session manager to cogs, each cog opens session for itself and passes it to builder as an argument
+
 class Connector:
     """Database Connection object."""
     def __init__(self) -> None:
@@ -22,6 +24,24 @@ class Connector:
         )
         self.engine = create_async_engine(self.url_object, echo=True)
         self.async_session = async_sessionmaker(self.engine, expire_on_commit=False)
+
+    async def select_object(
+        self,
+        stmt,
+    ) -> None:
+        """Select all rows."""
+        try:
+            #async with self.engine.begin() as conn:
+            #    await conn.run_sync(Base.metadata.create_all)
+
+            async with self.async_session() as session:
+                result = await session.execute(stmt)
+
+            await self.engine.dispose()
+
+            return result.scalar_one_or_none()
+        except exc.SQLAlchemyError as e:
+            print(e)
 
     async def select_objects(
         self,
@@ -41,24 +61,6 @@ class Connector:
         except exc.SQLAlchemyError as e:
             print(e)
 
-    async def select_object(
-        self,
-        stmt,
-    ) -> None:
-        """Select all rows."""
-        try:
-            #async with self.engine.begin() as conn:
-            #    await conn.run_sync(Base.metadata.create_all)
-
-            async with self.async_session() as session:
-                result = await session.execute(stmt)
-
-            await self.engine.dispose()
-
-            return result.scalar()
-        except exc.SQLAlchemyError as e:
-            print(e)
-
     async def update_objects(
         self,
         stmt
@@ -67,6 +69,22 @@ class Connector:
         try:
             async with self.async_session() as session:
                 await session.execute(stmt)
+                await session.commit()
+                await session.close()
+
+            await self.engine.dispose()
+
+        except exc.SQLAlchemyError as e:
+            print(e)
+
+    async def insert_objects(
+        self,
+        values
+    ) -> None:
+        """Insert values into table."""
+        try:
+            async with self.async_session() as session:
+                session.add_all(values)
                 await session.commit()
                 await session.close()
 
