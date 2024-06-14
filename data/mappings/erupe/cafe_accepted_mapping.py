@@ -7,4 +7,6 @@ from ..base_mapping import Base
 class CafeAccepted(Base):
     """Cafe Accepted table object"""
     __tablename__ = "cafe_accepted"
-    id: Mapped[int] = mapped_column(primary_key=True)
+    cafe_id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int]
+

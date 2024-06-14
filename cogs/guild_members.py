@@ -6,13 +6,13 @@ from discord.ext import commands
 from discord import app_commands
 
 from settings import CONFIG
-import core.viewmodel as view
+from data import GuildBuilder
 from core.view.pagination import Pagination
 
 class GuildMembers(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
-        self.viewmodel = view.View()
+        self.viewmodel = GuildBuilder()
 
     @app_commands.command(name="guild_members", description="Show all guilds.")
     @app_commands.describe(

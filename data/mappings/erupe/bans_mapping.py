@@ -11,4 +11,4 @@ class Bans(Base):
     """Bans table object"""
     __tablename__ = "bans"
     id: Mapped[int] = mapped_column(primary_key=True)
-    expires: Mapped[datetime.datetime] = mapped_column(server_default=func.now()) # pylint: disable=[not-callable]
+    expires: Mapped[datetime.datetime] = mapped_column(nullable=True, server_default=func.now()) # pylint: disable=[not-callable]

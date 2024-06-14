@@ -5,12 +5,12 @@ from discord.ext import commands
 from discord import app_commands
 
 from settings import CONFIG
-import core.viewmodel as view
+from data import GuildBuilder
 
 class UpdateGuild(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
-        self.viewmodel = view.View()
+        self.viewmodel = GuildBuilder()
 
     @app_commands.command(name="update_guild", description="Ping!")
     @app_commands.checks.cooldown(
