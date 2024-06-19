@@ -24,7 +24,7 @@ class GuildMembers(commands.Cog):
     key=lambda i: (i.guild_id, i.user.id)
     )
     async def guild_members(self, interaction: discord.Interaction, guild_id: int):
-        """Current realm list setting."""
+        """Show all guilds."""
         elements = await self.viewmodel.select_guild_characters_by_guild_id(guild_id)
         if isinstance(elements, list):
             L = 15

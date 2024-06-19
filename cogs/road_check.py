@@ -50,7 +50,7 @@ class Road(commands.Cog):
                     value=f"Error: {e}"
                 )
             # sends the data back to the user.
-            await interaction.response.send_message(embed=embed)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
 
         else:
             await interaction.response.send_message(

@@ -38,13 +38,13 @@ class AccountTokenReset(commands.Cog):
     CONFIG.commands.realm.cooldown,
     key=lambda i: (i.guild_id, i.user.id)
     )
-    async def bind_account_credentials(
+    async def account_token_reset(
         self,
         interaction: discord.Interaction,
         username: str,
         password: str
     ):
-        """Bind user account by using ingame credentials."""
+        """Reset account token."""
         try:
             user = await self.user_builder.select_user_by_username(username)
             if user is None:
@@ -62,7 +62,7 @@ class AccountTokenReset(commands.Cog):
             if discord_id is not None:
                 await self.user_builder.clear_user_token(user.id)
                 await interaction.response.send_message(
-                    f"Token cleared. To generate new token use `!discord` command in game.",
+                    "Token cleared. To generate new token use `!discord` command in game.",
                     ephemeral=True
                 )
             else:
@@ -81,8 +81,8 @@ class AccountTokenReset(commands.Cog):
                 ephemeral=True
             )
 
-    @bind_account_credentials.error
-    async def on_bind_account_credentials_error(
+    @account_token_reset.error
+    async def on_account_token_reset_error(
         self,
         interaction: discord.Interaction,
         error: app_commands.AppCommandError

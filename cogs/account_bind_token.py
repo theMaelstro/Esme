@@ -22,7 +22,7 @@ class AccountBindToken(commands.Cog):
     CONFIG.commands.realm.cooldown,
     key=lambda i: (i.guild_id, i.user.id)
     )
-    async def bind_account_token(self, interaction: discord.Interaction, discord_token: str):
+    async def account_bind_token(self, interaction: discord.Interaction, discord_token: str):
         """Bind user account by using token."""
         discord_id = await self.discord_builder.check_id(str(interaction.user.id))
         print("TEST", discord_id)
@@ -53,8 +53,8 @@ class AccountBindToken(commands.Cog):
                     ephemeral=True
                 )
 
-    @bind_account_token.error
-    async def on_bind_account_token_error(
+    @account_bind_token.error
+    async def on_account_bind_token_error(
         self,
         interaction: discord.Interaction,
         error: app_commands.AppCommandError

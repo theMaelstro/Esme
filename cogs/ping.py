@@ -16,13 +16,13 @@ class Ping(commands.Cog):
     key=lambda i: (i.guild_id, i.user.id)
     )
     async def ping(self, interaction: discord.Interaction):
-        """Current realm list setting."""
+        """Ping!"""
         await interaction.response.send_message(
             f'# [Pong](https://tenor.com/view/asby-vtuber-streamer-steering-wheel-swerving-gif-27623108)\n{interaction.user.mention}',
             ephemeral=True)
 
     @ping.error
-    async def on_register_error(
+    async def on_ping_error(
         self,
         interaction: discord.Interaction,
         error: app_commands.AppCommandError

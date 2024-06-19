@@ -38,7 +38,7 @@ class AccountBindCredentials(commands.Cog):
     CONFIG.commands.realm.cooldown,
     key=lambda i: (i.guild_id, i.user.id)
     )
-    async def bind_account_credentials(
+    async def account_bind_credentials(
         self,
         interaction: discord.Interaction,
         username: str,
@@ -85,8 +85,8 @@ class AccountBindCredentials(commands.Cog):
                 ephemeral=True
             )
 
-    @bind_account_credentials.error
-    async def on_bind_account_credentials_error(
+    @account_bind_credentials.error
+    async def on_account_bind_credentials_error(
         self,
         interaction: discord.Interaction,
         error: app_commands.AppCommandError
