@@ -1,7 +1,7 @@
 from sqlalchemy import select, update
 from sqlalchemy.orm import load_only
 
-from data.connector import Connector
+from data.connector import CONN
 from data.mappings.erupe import (
     Guilds
 )
@@ -10,7 +10,7 @@ from data.mappings.custom.views import (
 )
 class GuildBuilder():
     def __init__(self) -> None:
-        self.db = Connector()
+        self.db = CONN
 
     async def select_guilds(self):
         """Select Guild rows"""

@@ -1,14 +1,14 @@
 from sqlalchemy import select, update
 from sqlalchemy.orm import load_only
 
-from data.connector import Connector
+from data.connector import CONN
 from data.mappings.erupe import (
     Characters
 )
 
 class CharactersBuilder():
     def __init__(self) -> None:
-        self.db = Connector()
+        self.db = CONN
 
     async def select_characters_by_user_id(self, user_id: int):
         """Select characters by user id"""

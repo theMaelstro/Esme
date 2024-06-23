@@ -17,11 +17,16 @@ class Connector:
         self.url_object = URL.create(
             "postgresql+asyncpg",
             username=os.getenv('DB_USERNAME'),
-            password=os.getenv('DB_PASSWORD'),  # plain (unescaped) text
+            password=os.getenv('DB_PASSWORD'),
             host=os.getenv('DB_HOST'),
             port=os.getenv('DB_PORT'),
-            database="test",
+            database=os.getenv('DB_NAME'),
         )
+        self.engine = None
+        self.async_session = None
+
+    async def open_connection(self) -> None:
+        """Estabilish connection with database."""
         self.engine = create_async_engine(self.url_object, echo=True)
         self.async_session = async_sessionmaker(self.engine, expire_on_commit=False)
 
@@ -92,6 +97,8 @@ class Connector:
 
         except exc.SQLAlchemyError as e:
             print(e)
+
+CONN = Connector()
 
 """
 async def insert_objects(

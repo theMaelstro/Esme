@@ -1,14 +1,14 @@
 from sqlalchemy import select, update
 from sqlalchemy.orm import load_only
 
-from data.connector import Connector
+from data.connector import CONN
 from data.mappings.custom.tables import (
     Discord
 )
 
 class DiscordBuilder():
     def __init__(self) -> None:
-        self.db = Connector()
+        self.db = CONN
 
     async def check_id(self, discord_id: str):
         """Check if discord id is registered."""

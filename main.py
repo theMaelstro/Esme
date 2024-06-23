@@ -8,6 +8,7 @@ import discord
 from discord.ext import commands
 
 from settings import CONFIG
+from data.connector import CONN
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -45,6 +46,7 @@ class MyClient(commands.Bot):
     async def setup_hook(self):
         await CONFIG.init_config()
         await self.load_cogs()
+        await CONN.open_connection()
         # This copies the global commands over to your guild.
         #self.tree.copy_global_to(guild=MY_GUILD)
         #await self.tree.sync(guild=MY_GUILD)
