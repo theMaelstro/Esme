@@ -1,1 +1,1 @@
-from .weapon_types import get_weapon_type
+from .weapon_types import get_weapon_type_emoji, get_weapon_type_image_url

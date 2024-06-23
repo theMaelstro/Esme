@@ -3,8 +3,10 @@ import time
 import discord
 from discord.ext import commands
 from discord import app_commands
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from settings import CONFIG
+from data.connector import CONN
 from data import GuildBuilder
 
 class GuildSetLeader(commands.Cog):
@@ -25,7 +27,15 @@ class GuildSetLeader(commands.Cog):
         leader_id: int
     ):
         """Set guild leader by id."""
-        await self.viewmodel.update_guild_leader(guild_id, leader_id)
+        # Create session
+        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+        async with async_session() as session:
+            await self.viewmodel.update_guild_leader(self, guild_id, leader_id)
+
+            # Close Session
+            await session.commit()
+            await session.close()
+
         await interaction.response.send_message(
             f'Beep Boop {interaction.user.mention}',
             ephemeral=True

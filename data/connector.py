@@ -6,10 +6,7 @@ import os
 
 from sqlalchemy import exc
 from sqlalchemy import URL
-from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine
-
-# TODO: Move session manager to cogs, each cog opens session for itself and passes it to builder as an argument
 
 class Connector:
     """Database Connection object."""
@@ -23,15 +20,14 @@ class Connector:
             database=os.getenv('DB_NAME'),
         )
         self.engine = None
-        self.async_session = None
 
     async def open_connection(self) -> None:
         """Estabilish connection with database."""
         self.engine = create_async_engine(self.url_object, echo=True)
-        self.async_session = async_sessionmaker(self.engine, expire_on_commit=False)
 
     async def select_object(
         self,
+        session,
         stmt,
     ) -> None:
         """Select all rows."""
@@ -39,17 +35,15 @@ class Connector:
             #async with self.engine.begin() as conn:
             #    await conn.run_sync(Base.metadata.create_all)
 
-            async with self.async_session() as session:
-                result = await session.execute(stmt)
-
-            await self.engine.dispose()
-
+            result = await session.execute(stmt)
             return result.scalar_one_or_none()
+
         except exc.SQLAlchemyError as e:
             print(e)
 
     async def select_objects(
         self,
+        session,
         stmt,
     ) -> None:
         """Select all rows."""
@@ -57,43 +51,32 @@ class Connector:
             #async with self.engine.begin() as conn:
             #    await conn.run_sync(Base.metadata.create_all)
 
-            async with self.async_session() as session:
-                result = await session.execute(stmt)
-
-            await self.engine.dispose()
-
+            result = await session.execute(stmt)
             return result.scalars().all()
+
         except exc.SQLAlchemyError as e:
             print(e)
 
     async def update_objects(
         self,
+        session,
         stmt
     ) -> None:
         """Update cell."""
         try:
-            async with self.async_session() as session:
-                await session.execute(stmt)
-                await session.commit()
-                await session.close()
-
-            await self.engine.dispose()
+            await session.execute(stmt)
 
         except exc.SQLAlchemyError as e:
             print(e)
 
     async def insert_objects(
         self,
+        session,
         values
     ) -> None:
         """Insert values into table."""
         try:
-            async with self.async_session() as session:
-                session.add_all(values)
-                await session.commit()
-                await session.close()
-
-            await self.engine.dispose()
+            session.add_all(values)
 
         except exc.SQLAlchemyError as e:
             print(e)

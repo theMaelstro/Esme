@@ -10,7 +10,7 @@ class CharactersBuilder():
     def __init__(self) -> None:
         self.db = CONN
 
-    async def select_characters_by_user_id(self, user_id: int):
+    async def select_characters_by_user_id(self, session, user_id: int):
         """Select characters by user id"""
         stmt = select(
             Characters
@@ -32,5 +32,5 @@ class CharactersBuilder():
             Characters.id
         )
 
-        rows = await self.db.select_objects(stmt)
+        rows = await self.db.select_objects(session, stmt)
         return rows

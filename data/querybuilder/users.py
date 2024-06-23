@@ -11,30 +11,30 @@ class UserBuilder():
     def __init__(self) -> None:
         self.db = CONN
 
-    async def select_id_by_token(self, discord_token):
+    async def select_id_by_token(self, session, discord_token):
         """Select user_id by discord_token."""
         stmt = select(Users).options(
             load_only(Users.id)
         ).where(Users.discord_token == discord_token)
-        user_id = await self.db.select_object(stmt)
+        user_id = await self.db.select_object(session, stmt)
         if user_id:
             print(user_id.id)
             return user_id.id
         return user_id
 
-    async def select_user_by_username(self, username: str):
+    async def select_user_by_username(self, session, username: str):
         """Select user id and password hash by username."""
         stmt = select(Users).options(
             load_only(Users.id, Users.password)
         ).where(Users.username == username)
-        user = await self.db.select_object(stmt)
+        user = await self.db.select_object(session, stmt)
         return user
 
-    async def clear_user_token(self, user_id: int):
+    async def clear_user_token(self, session, user_id: int):
         """Update user by setting discord token to NULL"""
         stmt = (
             update(Users)
             .where(Users.id == user_id)
             .values(discord_token=None)
         )
-        await self.db.update_objects(stmt)
+        await self.db.update_objects(session, stmt)

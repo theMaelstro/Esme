@@ -3,9 +3,11 @@ import time
 import discord
 from discord.ext import commands
 from discord import app_commands
+from sqlalchemy.ext.asyncio import async_sessionmaker
 import bcrypt
 
 from settings import CONFIG
+from data.connector import CONN
 from data import UserBuilder, DiscordBuilder
 from core import UsernameIncorrect, UnmatchingPasswords, DiscordNotRegistered
 
@@ -45,41 +47,48 @@ class AccountTokenReset(commands.Cog):
         password: str
     ):
         """Reset account token."""
-        try:
-            user = await self.user_builder.select_user_by_username(username)
-            if user is None:
-                raise UsernameIncorrect(
-                    'Username is incorrect.'
-                )
+        # Create session
+        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+        async with async_session() as session:
+            try:
+                user = await self.user_builder.select_user_by_username(session, username)
+                if user is None:
+                    raise UsernameIncorrect(
+                        'Username is incorrect.'
+                    )
 
-            if await self.check_password(password, user.password) is False:
-                raise UnmatchingPasswords(
-                    'Passwords do not match.'
-                )
+                if await self.check_password(password, user.password) is False:
+                    raise UnmatchingPasswords(
+                        'Passwords do not match.'
+                    )
 
-            discord_id = await self.discord_builder.check_id(str(interaction.user.id))
-            print("TEST", discord_id)
-            if discord_id is not None:
-                await self.user_builder.clear_user_token(user.id)
+                discord_id = await self.discord_builder.check_id(session, str(interaction.user.id))
+                if discord_id is not None:
+                    await self.user_builder.clear_user_token(session, user.id)
+                    await interaction.response.send_message(
+                        "Token cleared. To generate new token use `!discord` command in game.",
+                        ephemeral=True
+                    )
+                else:
+                    raise DiscordNotRegistered(
+                        f'{interaction.user.mention} account is not registered.'
+                    )
+
+            except (
+                UsernameIncorrect,
+                UnmatchingPasswords,
+                UnmatchingPasswords
+            ) as e:
+                print("FAILED", e)
                 await interaction.response.send_message(
-                    "Token cleared. To generate new token use `!discord` command in game.",
+                    f"Failed: {e}",
                     ephemeral=True
                 )
-            else:
-                raise DiscordNotRegistered(
-                    f'{interaction.user.mention} account is not registered.'
-                )
 
-        except (
-            UsernameIncorrect,
-            UnmatchingPasswords,
-            UnmatchingPasswords
-        ) as e:
-            print("FAILED", e)
-            await interaction.response.send_message(
-                f"Failed: {e}",
-                ephemeral=True
-            )
+            finally:
+                # Close Session
+                await session.commit()
+                await session.close()
 
     @account_token_reset.error
     async def on_account_token_reset_error(

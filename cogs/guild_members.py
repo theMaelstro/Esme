@@ -4,8 +4,10 @@ import re
 import discord
 from discord.ext import commands
 from discord import app_commands
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from settings import CONFIG
+from data.connector import CONN
 from data import GuildBuilder
 from core.view.pagination import Pagination
 
@@ -25,7 +27,15 @@ class GuildMembers(commands.Cog):
     )
     async def guild_members(self, interaction: discord.Interaction, guild_id: int):
         """Show all guilds."""
-        elements = await self.viewmodel.select_guild_characters_by_guild_id(guild_id)
+        # Create session
+        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+        async with async_session() as session:
+            elements = await self.viewmodel.select_guild_characters_by_guild_id(session, guild_id)
+
+            # Close Session
+            await session.commit()
+            await session.close()
+
         if isinstance(elements, list):
             L = 15
             async def get_page(page: int):
