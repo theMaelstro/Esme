@@ -1,3 +1,9 @@
+"""
+discord.py documentation examples put into cog.
+https://github.com/Rapptz/discord.py/blob/master/examples/app_commands/basic.py
+
+"""
+
 import os
 from typing import Optional
 
