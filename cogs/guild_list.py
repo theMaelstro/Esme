@@ -1,5 +1,6 @@
 import time
 import re
+import logging
 
 import discord
 from discord.ext import commands
@@ -10,8 +11,9 @@ from settings import CONFIG
 from data.connector import CONN
 from data import GuildBuilder
 from core.view.pagination import Pagination
+from core import BaseCog
 
-class GuildList(commands.Cog):
+class GuildList(BaseCog):
     def __init__(self, client: commands.Bot):
         self.client = client
         self.viewmodel = GuildBuilder()

@@ -1,4 +1,5 @@
 import time
+import logging
 
 import discord
 from discord.ext import commands
@@ -8,8 +9,9 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from settings import CONFIG
 from data.connector import CONN
 from data import GuildBuilder
+from core import BaseCog
 
-class GuildSetLeader(commands.Cog):
+class GuildSetLeader(BaseCog):
     def __init__(self, client: commands.Bot):
         self.client = client
         self.viewmodel = GuildBuilder()

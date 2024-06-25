@@ -1,11 +1,14 @@
 import time
+import logging
 
 import discord
 from discord.ext import commands
 from discord import app_commands
-from settings import CONFIG
 
-class Ping(commands.Cog):
+from settings import CONFIG
+from core import BaseCog
+
+class Ping(BaseCog):
     def __init__(self, client: commands.Bot):
         self.client = client
 

@@ -1,5 +1,6 @@
 import time
 import re
+import logging
 
 import discord
 from discord.ext import commands
@@ -15,8 +16,9 @@ from core import get_weapon_type_image_url
 from core.exceptions import (
     DiscordNotRegistered
 )
+from core import BaseCog
 
-class CharacterSelect(commands.Cog):
+class CharacterSelect(BaseCog):
     def __init__(self, client: commands.Bot):
         self.client = client
         self.characters_builder = CharactersBuilder()

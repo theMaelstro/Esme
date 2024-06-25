@@ -7,8 +7,9 @@ from discord.ext import commands
 from discord import app_commands
 
 from settings import CONFIG
+from core import BaseCog
 
-class Road(commands.Cog):
+class Road(BaseCog):
     def __init__(self, client: commands.Bot):
         self.client = client
 

@@ -1,4 +1,5 @@
 import time
+import logging
 
 import discord
 from discord.ext import commands
@@ -11,8 +12,9 @@ from data import UserBuilder, DiscordBuilder
 from core.exceptions import (
     TokenInvalid
 )
+from core import BaseCog
 
-class AccountBindToken(commands.Cog):
+class AccountBindToken(BaseCog):
     def __init__(self, client: commands.Bot):
         self.client = client
         self.user_builder = UserBuilder()

@@ -1,9 +1,12 @@
+import logging
+
 import discord
 from discord.ext import commands
 
 from settings import CONFIG
+from core import BaseCog
 
-class BotManagement(commands.Cog):
+class BotManagement(BaseCog):
     def __init__(self, client: commands.Bot):
         self.client = client
 
@@ -32,7 +35,7 @@ class BotManagement(commands.Cog):
                 self.client.tree.copy_global_to(guild=arg)
                 await self.client.tree.sync(guild=arg)
                 await ctx.send(f"Synced commands for guild: {arg}.")
-    
+
     @sync_commands.error
     async def on_register_error(
         self,

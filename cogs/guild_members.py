@@ -1,5 +1,6 @@
 import time
 import re
+import logging
 
 import discord
 from discord.ext import commands
@@ -70,6 +71,14 @@ class GuildMembers(commands.Cog):
                 f"You are on cooldown. Please try again <t:{round(time.time())+remaining_time}:R>",
                 ephemeral=True
             )
+
+    async def cog_load(self) -> None:
+        logging.info("Cog Loaded: %s.", self.__cog_name__)
+        return await super().cog_load()
+
+    async def cog_unload(self) -> None:
+        logging.info("Cog Unloaded: %s.", self.__cog_name__)
+        return await super().cog_unload()
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
