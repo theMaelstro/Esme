@@ -1,4 +1,5 @@
 import time
+import logging
 
 import discord
 from discord.ext import commands
@@ -28,7 +29,7 @@ class AccountBindCredentials(commands.Cog):
             ) == bytes(stored_hash):
                 return True
         except Exception as e:
-            print("CRYPT ERROR", e)
+            logging.warning("BCRYPT: %s", e)
         return False
 
     @app_commands.command(
@@ -77,13 +78,13 @@ class AccountBindCredentials(commands.Cog):
                     )
 
             except UsernameIncorrect as e:
-                print("FAILED", e)
+                logging.warning(e)
                 await interaction.response.send_message(
                     f"Failed: *{e}*",
                     ephemeral=True
                 )
             except UnmatchingPasswords as e:
-                print("FAILED", e)
+                logging.warning(e)
                 await interaction.response.send_message(
                     f"Failed: *{e}*",
                     ephemeral=True

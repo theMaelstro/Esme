@@ -7,6 +7,7 @@ import json
 from collections import namedtuple
 import configparser
 import dataclasses
+import logging
 
 @dataclasses.dataclass
 class General:
@@ -66,7 +67,7 @@ class Config:
     async def create_config(self):
         """Create default config."""
 
-        print("INFO", "Creating config.")
+        logging.info("Creating config.")
         # a Python object (dict):
         my_json = {
             'General': {
@@ -110,8 +111,7 @@ class Config:
             with open('config.json', 'w', encoding='utf-8') as f:
                 json.dump(my_json, f, ensure_ascii=False, indent=4)
 
-            print(
-                "INFO",
+            logging.info(
                 (
                     "Edit config.json and use /reload_config command"
                     "or restart bot for changes to take effect."
@@ -119,13 +119,13 @@ class Config:
             )
 
         except Exception as e:
-            print("CONFIG CREATE", e)
+            logging.error("CONFIG CREATE: %s", e)
 
     async def read_config(self):
         """Read config."""
 
         try:
-            print("INFO", "Reading config.")
+            logging.info("Reading config.")
             with open('config.json', encoding='utf-8') as f:
                 my_json = json.load(f)
 
@@ -191,21 +191,21 @@ class Config:
             )
 
         except Exception as e:
-            print("CONFIG CREATE", e)
+            logging.error("CONFIG CREATE: %s", e)
 
     async def init_config(self):
         """Initialize config, check if valid config exists."""
         try:
             # Check if file exists.
-            print("INFO", "Trying to find config")
+            logging.info("Trying to find config")
             if not os.path.isfile('config.json'):
                 raise FileNotFoundError
 
-            print("INFO", "Config found.")
+            logging.info("Config found.")
             await self.read_config()
 
         except FileNotFoundError:
-            print("WARNING", "Config not found.")
+            logging.error("Config not found.")
             await self.create_config()
             await self.read_config()
 

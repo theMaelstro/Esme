@@ -1,4 +1,5 @@
 import codecs
+import logging
 
 import requests
 import discord
@@ -81,7 +82,7 @@ class Road(commands.Cog):
             f"test/{hash(file.url)}.bin",
             "wb"
         ) as f: f.write(r.content)
-        print(f'Written new data to test/{hash(file.url)}.bin .')
+        logging.info('Written new data to test/%s.bin.', hash(file.url))
 
     # gets necessary values to get the pointers and stuff.
     async def readvalues(self, bytes):

@@ -18,7 +18,6 @@ class UserBuilder():
         ).where(Users.discord_token == discord_token)
         user_id = await self.db.select_object(session, stmt)
         if user_id:
-            print(user_id.id)
             return user_id.id
         return user_id
 

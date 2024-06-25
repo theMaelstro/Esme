@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import (
     VARCHAR
 )
 
-from ...base_mapping import Base
+from data.mappings import Base
 
 class Discord(Base):
     """Discord table object"""
@@ -13,4 +13,4 @@ class Discord(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     discord_id: Mapped[str] = mapped_column(VARCHAR(18))
     user_id: Mapped[int]
-    character_id: Mapped[int]
+    character_id: Mapped[int] = mapped_column(nullable=True)

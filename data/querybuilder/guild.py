@@ -39,8 +39,6 @@ class GuildBuilder():
         )
 
         rows = await self.db.select_objects(session, stmt)
-        for row in rows:
-            print(row.id, row.name, row.joined_at_epoch)
         return rows
 
 

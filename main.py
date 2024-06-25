@@ -2,14 +2,17 @@
 Main Module
 """
 import os
-from dotenv import load_dotenv
+import logging
 
+from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 
+from settings.logger import init_logger
 from settings import CONFIG
 from data.connector import CONN
 
+init_logger()
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
@@ -32,14 +35,12 @@ class MyClient(commands.Bot):
         """Load cogs."""
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):
-                print(filename)
                 await self.load_extension(f'cogs.{filename[:-3]}')
 
     async def reload_cogs(self):
         """Load cogs."""
         for filename in os.listdir('./cogs'):
             if filename.endswith('.py'):
-                print(filename)
                 await self.reload_extension(f'cogs.{filename[:-3]}')
         return True
 
@@ -57,7 +58,6 @@ client = MyClient(intents=intents)
 @client.event
 async def on_ready():
     """On bot initialized."""
-    print(f'Logged in as {client.user} (ID: {client.user.id})')
-    print('------')
+    logging.info('Logged in as %s (ID: %s)', client.user, client.user.id)
 
-client.run(TOKEN)
+client.run(TOKEN, log_handler=None)

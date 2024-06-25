@@ -1,4 +1,5 @@
 import time
+import logging
 
 import discord
 from discord.ext import commands
@@ -28,7 +29,7 @@ class AccountTokenReset(commands.Cog):
             ) == bytes(stored_hash):
                 return True
         except Exception as e:
-            print("CRYPT ERROR", e)
+            logging.warning("BCRYPT: %s", e)
         return False
 
     @app_commands.command(
@@ -79,7 +80,7 @@ class AccountTokenReset(commands.Cog):
                 UnmatchingPasswords,
                 UnmatchingPasswords
             ) as e:
-                print("FAILED", e)
+                logging.warning(e)
                 await interaction.response.send_message(
                     f"Failed: {e}",
                     ephemeral=True
