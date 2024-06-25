@@ -63,17 +63,16 @@ class AccountBindCredentials(commands.Cog):
                     )
 
                 discord_id = await self.discord_builder.check_id(session, str(interaction.user.id))
-                print("TEST", discord_id)
                 if discord_id is not None:
                     await self.discord_builder.bind_user_old(session, user.id, str(interaction.user.id))
                     await interaction.response.send_message(
-                        f"Account updated.\nUser ID: *{user.id}*",
+                        "Account binding updated.",
                         ephemeral=True
                     )
                 else:
                     await self.discord_builder.bind_user_new(session, user.id, str(interaction.user.id))
                     await interaction.response.send_message(
-                        f"Account bound.\nUser ID: *{user.id}*",
+                        "Account bound.",
                         ephemeral=True
                     )
 

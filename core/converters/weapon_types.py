@@ -3,6 +3,7 @@ Converter functions for numeric datatypes.
 """
 def get_weapon_type_emoji(weapon_type: int) -> str:
     """Format weapon type emoji."""
+    """
     weapon_types = {
     0: "<:Wgs:986251238750441492>", # GS
     1: "<:Whbg:986251717026926592>", # HBG
@@ -18,6 +19,23 @@ def get_weapon_type_emoji(weapon_type: int) -> str:
     11: "<:Wtonfa:986249617626787890>", # T
     12: "<:Wswaxe:986251790066515998>", # SA
     13: "<:WMS:986342634299752519>" # MS
+    }
+    """
+    weapon_types = {
+    0: "<:wgs:1254599178655502427>", # GS
+    1: "<:whbg:1254599181604225146>", # HBG
+    2: "<:wh:1254599179888758874>", # H
+    3: "<:wl:1254599184951152650>", # L
+    4: "<:wsns:1254599193998393416>", # SNS
+    5: "<:wlbg:1254599186012442647>", #LBG
+    6: "<:wdb:1254599176017412197>", #DB
+    7: "<:wls:1254599492775444490>", # LS
+    8: "<:whh:1254599182925430874>", # HH
+    9: "<:wgl:1254599177464451194>", # GL
+    10: "<:wb:1254599174616514560>", # B
+    11: "<:wt:1254599495350489242>", # T
+    12: "<:wsa:1254599494088261682>", # SA
+    13: "<:wms:1254599189711814758>" # MS
     }
     return weapon_types[weapon_type]
 

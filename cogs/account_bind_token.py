@@ -8,6 +8,9 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from settings import CONFIG
 from data.connector import CONN
 from data import UserBuilder, DiscordBuilder
+from core.exceptions import (
+    TokenInvalid
+)
 
 class AccountBindToken(commands.Cog):
     def __init__(self, client: commands.Bot):
@@ -31,36 +34,53 @@ class AccountBindToken(commands.Cog):
         async with async_session() as session:
             discord_id = await self.discord_builder.check_id(session, str(interaction.user.id))
 
-            if discord_id is not None:
-                user_id = await self.user_builder.select_id_by_token(session, discord_token)
-                if user_id:
-                    await self.discord_builder.bind_user_old(session, user_id, str(interaction.user.id))
-                    await interaction.response.send_message(
-                        f"Account updated.\nUser ID: *{user_id}*",
-                        ephemeral=True
-                    )
+            try:
+                if discord_id is not None:
+                    # Update old user.
+                    user_id = await self.user_builder.select_id_by_token(session, discord_token)
+                    if user_id:
+                        await self.discord_builder.bind_user_old(
+                            session,
+                            user_id,
+                            str(interaction.user.id)
+                        )
+                        await interaction.response.send_message(
+                            f"Account updated.\nUser ID: *{user_id}*",
+                            ephemeral=True
+                        )
+                    else:
+                        raise TokenInvalid(
+                            "User token is invalid."
+                        )
                 else:
-                    await interaction.response.send_message(
-                        "Please provide correct user token",
-                        ephemeral=True
-                    )
-            else:
-                user_id = await self.user_builder.select_id_by_token(session, discord_token)
-                if user_id:
-                    await self.discord_builder.bind_user_new(session, user_id, str(interaction.user.id))
-                    await interaction.response.send_message(
-                        f"Account bound.\nUser ID: *{user_id}*",
-                        ephemeral=True
-                    )
-                else:
-                    await interaction.response.send_message(
-                        "Please provide correct user token",
-                        ephemeral=True
-                    )
+                    # Register new user.
+                    user_id = await self.user_builder.select_id_by_token(session, discord_token)
+                    if user_id:
+                        await self.discord_builder.bind_user_new(
+                            session,
+                            user_id,
+                            str(interaction.user.id)
+                        )
+                        await interaction.response.send_message(
+                            f"Account bound.\nUser ID: *{user_id}*",
+                            ephemeral=True
+                        )
+                    else:
+                        raise TokenInvalid(
+                            "User token is invalid."
+                        )
+            except (
+                TokenInvalid
+            ) as e:
+                await interaction.response.send_message(
+                    f"Error: {e}",
+                    ephemeral=True
+                )
 
-            # Close Session
-            await session.commit()
-            await session.close()
+            finally:
+                # Close Session
+                await session.commit()
+                await session.close()
 
     @account_bind_token.error
     async def on_account_bind_token_error(

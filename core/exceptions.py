@@ -39,3 +39,6 @@ class UsernameIncorrect(Exception):
 
 class RestrictedUsername(Exception):
     """Username is restricted or contains inappropriate words."""
+
+class TokenInvalid(Exception):
+    """User token is invalid."""
