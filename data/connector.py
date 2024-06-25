@@ -3,10 +3,17 @@ PSQL Connector
 """
 from __future__ import annotations
 import os
+from asyncpg.exceptions import DuplicateTableError
 
 from sqlalchemy import exc
 from sqlalchemy import URL
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    async_sessionmaker,
+    AsyncSession
+)
+
+from data.mappings import Discord
 
 class Connector:
     """Database Connection object."""
@@ -23,11 +30,32 @@ class Connector:
 
     async def open_connection(self) -> None:
         """Estabilish connection with database."""
-        self.engine = create_async_engine(self.url_object, echo=True)
+        try:
+            # Create engine.
+            self.engine = create_async_engine(self.url_object, echo=True)
+
+            # Connect to database
+            async with self.engine.begin() as conn:
+                # Attempt to create discord registration table.
+                print("INFO", "Checking if Discord table exists.")
+                await conn.run_sync(Discord.__table__.create)
+                print("INFO", "Discord Table created because it was not found.")
+
+        except exc.ProgrammingError as e:
+            if isinstance(e.orig.__cause__, DuplicateTableError):
+                print("INFO", "Discord table exists, skipping.")
+            else:
+                print("ERROR: ", e)
+
+        except exc.SQLAlchemyError as e:
+            print("ERROR: ", e)
+
+        finally:
+            await self.engine.dispose()
 
     async def select_object(
         self,
-        session,
+        session: async_sessionmaker[AsyncSession],
         stmt,
     ) -> None:
         """Select all rows."""
@@ -43,7 +71,7 @@ class Connector:
 
     async def select_objects(
         self,
-        session,
+        session: async_sessionmaker[AsyncSession],
         stmt,
     ) -> None:
         """Select all rows."""
@@ -59,7 +87,7 @@ class Connector:
 
     async def update_objects(
         self,
-        session,
+        session: async_sessionmaker[AsyncSession],
         stmt
     ) -> None:
         """Update cell."""
@@ -71,7 +99,7 @@ class Connector:
 
     async def insert_objects(
         self,
-        session,
+        session: async_sessionmaker[AsyncSession],
         values
     ) -> None:
         """Insert values into table."""
