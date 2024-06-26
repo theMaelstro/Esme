@@ -4,9 +4,7 @@ https://github.com/Rapptz/discord.py/blob/master/examples/app_commands/basic.py
 
 """
 
-import os
 from typing import Optional
-import logging
 
 import discord
 from discord.ext import commands
@@ -16,6 +14,7 @@ from settings import CONFIG
 from core import BaseCog
 
 class Examples(BaseCog):
+    """Cog which contains discord.py documentation examples."""
     def __init__(self, client: commands.Bot):
         self.client = client
         self.ctx_menu_show_join_date = app_commands.ContextMenu(

@@ -1,4 +1,6 @@
-from typing import Any, Callable
+import logging
+from typing import Callable
+
 import discord
 
 from .pagination import Pagination
@@ -8,9 +10,9 @@ class PaginationSelector(Pagination):
             self,
             interaction: discord.Interaction[discord.Client],
             session,
-            method_call,
+            method_call: Callable,
             selector_values: list[int],
-            get_page: Callable[..., Any],
+            get_page: Callable,
             public=True,
         ):
         super().__init__(interaction, get_page, public)
@@ -51,7 +53,7 @@ class PaginationSelector(Pagination):
         # Prepare response embed
         emb = discord.Embed(
             title="Character Selected",
-            color=0x00FF00
+            color=discord.Color.green()
         )
         emb.set_author(
             name=f"Requested by {interaction.user}",
@@ -59,8 +61,17 @@ class PaginationSelector(Pagination):
         )
         #emb.set_footer(text=f"Page {page} from {n}")
 
+        logging.info("%s: %s", self.interaction.user.id, "Selector Closed")
         # Update embed
         await interaction.response.edit_message(embed=emb, view=self)
+
+    async def on_timeout(self):
+        # Close session
+        await self.session.commit()
+        await self.session.close()
+        # remove buttons on timeout
+        message = await self.interaction.original_response()
+        await message.edit(view=None)
 
     @discord.ui.button(emoji="✅", style=discord.ButtonStyle.blurple)
     async def select(self, interaction: discord.Interaction, button: discord.Button):

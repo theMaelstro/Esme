@@ -1,4 +1,4 @@
-import time
+"""Extension module for GuildSetLeader Cog."""
 import logging
 
 import discord
@@ -10,17 +10,22 @@ from settings import CONFIG
 from data.connector import CONN
 from data import GuildBuilder
 from core import BaseCog
+from core import MissingPermissions
 
 class GuildSetLeader(BaseCog):
+    """Cog handling guild leader update by admin."""
     def __init__(self, client: commands.Bot):
         self.client = client
-        self.viewmodel = GuildBuilder()
+        self.guild_builder = GuildBuilder()
 
-    @app_commands.command(name="guild_set_leader", description="Set guild leader by id.")
+    @app_commands.command(
+        name="guild_set_leader",
+        description="Set guild leader by id."
+    )
     @app_commands.checks.cooldown(
-    1,
-    CONFIG.commands.realm.cooldown,
-    key=lambda i: (i.guild_id, i.user.id)
+        1,
+        CONFIG.commands.realm.cooldown,
+        key=lambda i: (i.guild_id, i.user.id)
     )
     async def guild_set_leader(
         self,
@@ -29,19 +34,42 @@ class GuildSetLeader(BaseCog):
         leader_id: int
     ):
         """Set guild leader by id."""
-        # Create session
-        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-        async with async_session() as session:
-            await self.viewmodel.update_guild_leader(self, guild_id, leader_id)
+        try:
+            if interaction.author.id not in CONFIG.discord.admin_user_ids:
+                raise MissingPermissions(
+                    f"{interaction.author.mention} is missing permissions."
+                )
 
-            # Close Session
-            await session.commit()
-            await session.close()
+            # Create session
+            async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+            async with async_session() as session:
+                await self.guild_builder.update_guild_leader(self, guild_id, leader_id)
 
-        await interaction.response.send_message(
-            f'Beep Boop {interaction.user.mention}',
-            ephemeral=True
-        )
+                # Close Session
+                await session.commit()
+                await session.close()
+
+            logging.info("%s: %s", interaction.user.id, "Leader Updated")
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Leader Updated",
+                    color=discord.Color.green()
+                ),
+                ephemeral=True
+            )
+
+        except (
+            MissingPermissions
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Leader Update Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
 
     @guild_set_leader.error
     async def on_guild_set_leader_error(
@@ -50,12 +78,7 @@ class GuildSetLeader(BaseCog):
         error: app_commands.AppCommandError
     ):
         """On cooldown send remaining time info message."""
-        if isinstance(error, app_commands.CommandOnCooldown):
-            remaining_time = round(error.retry_after)
-            await interaction.response.send_message(
-                f"You are on cooldown. Please try again <t:{round(time.time())+remaining_time}:R>",
-                ephemeral=True
-            )
+        await self.on_cooldown_response(interaction, error)
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""

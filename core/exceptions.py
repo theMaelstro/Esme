@@ -42,3 +42,15 @@ class RestrictedUsername(Exception):
 
 class TokenInvalid(Exception):
     """User token is invalid."""
+
+class MissingPermissions(Exception):
+    """User is missing elevated permissions."""
+
+class MissingArgument(Exception):
+    """Missing required positional argument."""
+
+class CoroutineFailed(Exception):
+    """
+    Coroutine returned False or None.
+    Following task execution not possible.
+    """

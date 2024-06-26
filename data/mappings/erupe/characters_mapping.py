@@ -6,7 +6,7 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.dialects.postgresql import (
     TEXT,
     BYTEA,
-    VARCHAR, 
+    VARCHAR,
     TIMESTAMP
 )
 

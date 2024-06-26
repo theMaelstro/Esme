@@ -12,6 +12,7 @@ class GuildCharactersByGuildId(Base):
         guild_characters.id,
         guild_characters.guild_id,
         characters.name,
+        guild_characters.order_index,
         date_part('epoch'::text, guild_characters.joined_at) AS joined_at_epoch
     FROM guild_characters
     LEFT JOIN characters 
@@ -22,4 +23,5 @@ class GuildCharactersByGuildId(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     guild_id: Mapped[int]
     name: Mapped[str]
+    order_index: Mapped[int]
     joined_at_epoch: Mapped[float]

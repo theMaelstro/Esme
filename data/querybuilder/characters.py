@@ -7,6 +7,7 @@ from data.mappings.erupe import (
 )
 
 class CharactersBuilder():
+    """Query builder class for Characters table."""
     def __init__(self) -> None:
         self.db = CONN
 

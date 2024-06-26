@@ -1,43 +1,58 @@
-import logging
-
+"""
+Extension module for BotManagement Cog.
+Managment commands need bot mention message to work.
+"""
 import discord
 from discord.ext import commands
 
 from settings import CONFIG
 from core import BaseCog
+from core import MissingPermissions, CoroutineFailed
 
 class BotManagement(BaseCog):
+    """Cog handling bot admin tasks."""
     def __init__(self, client: commands.Bot):
         self.client = client
-
-    @commands.command(aliases=['?', 'list'], pass_context=True)
-    async def list_commands(self, ctx):
-        """List all prefix commands."""
-
-        result = ""
-        for element in self.client.walk_commands():
-            result += f"`{element}`\n"
-
-        if ctx.author.id in CONFIG.discord.admin_user_ids:
-            await ctx.send(result)
-        else:
-            await ctx.send(f"You are not allowed to use that command {ctx.author.mention}.")
 
     @commands.command(pass_context=True)
     async def sync_commands(self, ctx, arg: discord.Guild) -> None:
         """Sync commands for specified guild."""
-        if ctx.author.id not in CONFIG.discord.admin_user_ids:
-            await ctx.send(f"You are not allowed to use that command {ctx.author.mention}.")
-        else:
-            if not arg:
-                await ctx.send("No positional argument provided. `sync_commands guild_id`.")
-            else:
-                self.client.tree.copy_global_to(guild=arg)
-                await self.client.tree.sync(guild=arg)
-                await ctx.send(f"Synced commands for guild: {arg}.")
+        try:
+            if ctx.author.id not in CONFIG.discord.admin_user_ids:
+                raise MissingPermissions(
+                    f"{ctx.author.mention} is missing permissions."
+                )
+
+            self.client.tree.copy_global_to(guild=arg)
+            await self.client.tree.sync(guild=arg)
+            await ctx.send(
+                embed=discord.Embed(
+                    title="Commands Synced",
+                    description=f"{ctx.author.mention} Guild: `{arg}` synced.",
+                    color=discord.Color.green()
+                ).set_author(
+                    name=ctx.author.name,
+                    icon_url=ctx.author.avatar.url
+                )
+            )
+
+        except (
+            MissingPermissions
+        ) as e:
+            await ctx.send(
+                embed=discord.Embed(
+                    title="Commands Sync Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ).set_author(
+                    name=ctx.author.name,
+                    icon_url=ctx.author.avatar.url
+                )
+            )
+
 
     @sync_commands.error
-    async def on_register_error(
+    async def on_sync_commands_error(
         self,
         ctx,
         error: commands.errors
@@ -45,39 +60,92 @@ class BotManagement(BaseCog):
         """On cooldown send remaining time info message."""
         if isinstance(error, commands.errors.MissingRequiredArgument):
             await ctx.send(
-                (
-                    "# Error\n"
-                    "## Trace: missing positional argument 'guild_id'\n"
-                    f"{ctx.author.mention} Please use `sync_commands <guild_id>`"
+                embed=discord.Embed(
+                    title="Commands Sync Failed",
+                    description=(
+                        "Missing required positional argument `guild_id`.\n"
+                        f"{ctx.author.mention} Please use `sync_commands <guild_id>`."
+                    ),
+                    color=discord.Color.red()
+                ).set_author(
+                    name=ctx.author.name,
+                    icon_url=ctx.author.avatar.url
                 )
             )
-
 
     @commands.command(pass_context=True)
     async def reload_cogs(self, ctx) -> None:
         """Reloads Cogs."""
-        if ctx.author.id in CONFIG.discord.admin_user_ids:
-            if await self.client.reload_cogs():
-                await ctx.send(
-                    f'{ctx.author.mention}, Cogs Reloaded.', ephemeral=True
+        try:
+            if ctx.author.id not in CONFIG.discord.admin_user_ids:
+                raise MissingPermissions(
+                    f"{ctx.author.mention} is missing permissions."
                 )
-        else:
+
+            if not await self.client.reload_cogs():
+                raise CoroutineFailed(
+                    f"{ctx.author.mention} Could not reload cogs, coroutine failed."
+                )
+
             await ctx.send(
-                f'{ctx.author.mention} you are not allowed to use this command.',
-                ephemeral=True
+                embed=discord.Embed(
+                    title="Cogs Reloaded",
+                    description=ctx.author.mention,
+                    color=discord.Color.green()
+                ).set_author(
+                    name=ctx.author.name,
+                    icon_url=ctx.author.avatar.url
+                )
+            )
+
+        except (
+            CoroutineFailed,
+            MissingPermissions
+        ) as e:
+            await ctx.send(
+                embed=discord.Embed(
+                    title="Cogs Reload Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ).set_author(
+                    name=ctx.author.name,
+                    icon_url=ctx.author.avatar.url
+                )
             )
 
     @commands.command(pass_context=True)
     async def reload_config(self, ctx):
         """Reload config file."""
-        if ctx.author.id in CONFIG.discord.admin_user_ids:
+        try:
+            if ctx.author.id not in CONFIG.discord.admin_user_ids:
+                raise MissingPermissions(
+                    f"{ctx.author.mention} is missing permissions."
+                )
+
             await CONFIG.init_config()
             await ctx.send(
-                'Config reloaded.'
+                embed=discord.Embed(
+                    title="Config Reloaded",
+                    description=ctx.author.mention,
+                    color=discord.Color.green()
+                ).set_author(
+                    name=ctx.author.name,
+                    icon_url=ctx.author.avatar.url
+                )
             )
-        else:
+
+        except (
+            MissingPermissions
+        ) as e:
             await ctx.send(
-                f"You are not allowed to use this command {ctx.author.mention}."
+                embed=discord.Embed(
+                    title="Config Reload Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ).set_author(
+                    name=ctx.author.name,
+                    icon_url=ctx.author.avatar.url
+                )
             )
 
 async def setup(client:commands.Bot) -> None:

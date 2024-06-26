@@ -9,8 +9,19 @@ from data.mappings.custom.views import (
     GuildCharactersByGuildId
 )
 class GuildBuilder():
+    """Query builder class for Guild table."""
     def __init__(self) -> None:
         self.db = CONN
+
+    async def select_guild(self, session, guild_id: int):
+        """Select Guild rows"""
+        stmt = select(Guilds).options(
+            load_only(Guilds.id, Guilds.name)
+        ).where(
+            Guilds.id == guild_id
+        )
+        rows = await self.db.select_object(session, stmt)
+        return rows
 
     async def select_guilds(self, session):
         """Select Guild rows"""
@@ -27,15 +38,15 @@ class GuildBuilder():
             GuildCharactersByGuildId
         ).options(
             load_only(
-                GuildCharactersByGuildId.id,
                 GuildCharactersByGuildId.name,
-                GuildCharactersByGuildId.joined_at_epoch
+                GuildCharactersByGuildId.joined_at_epoch,
+                GuildCharactersByGuildId.order_index
             )
 
         ).where(
             GuildCharactersByGuildId.guild_id == guild_id
         ).order_by(
-            GuildCharactersByGuildId.id
+            GuildCharactersByGuildId.order_index
         )
 
         rows = await self.db.select_objects(session, stmt)

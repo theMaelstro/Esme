@@ -1,4 +1,4 @@
-import time
+"""Extension module for AccountBindToken Cog."""
 import logging
 
 import discord
@@ -15,6 +15,7 @@ from core.exceptions import (
 from core import BaseCog
 
 class AccountBindToken(BaseCog):
+    """Cog handling binding account with token."""
     def __init__(self, client: commands.Bot):
         self.client = client
         self.user_builder = UserBuilder()
@@ -25,64 +26,70 @@ class AccountBindToken(BaseCog):
         description="Bind user account by using token. Use `!discord` in game to obtain user token."
     )
     @app_commands.checks.cooldown(
-    1,
-    CONFIG.commands.realm.cooldown,
-    key=lambda i: (i.guild_id, i.user.id)
+        1,
+        CONFIG.commands.realm.cooldown,
+        key=lambda i: (i.guild_id, i.user.id)
     )
     async def account_bind_token(self, interaction: discord.Interaction, discord_token: str):
         """Bind user account by using token."""
-        # Create session
-        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-        async with async_session() as session:
-            discord_id = await self.discord_builder.check_id(session, str(interaction.user.id))
+        try:
+            # Create session
+            async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+            async with async_session() as session:
+                discord_id = await self.discord_builder.check_id(session, str(interaction.user.id))
 
-            try:
+                user_id = await self.user_builder.select_id_by_token(session, discord_token)
+                if user_id is None:
+                    raise TokenInvalid(
+                            "User token is invalid."
+                        )
+
                 if discord_id is not None:
-                    # Update old user.
-                    user_id = await self.user_builder.select_id_by_token(session, discord_token)
-                    if user_id:
-                        await self.discord_builder.bind_user_old(
-                            session,
-                            user_id,
-                            str(interaction.user.id)
-                        )
-                        await interaction.response.send_message(
-                            f"Account updated.\nUser ID: *{user_id}*",
-                            ephemeral=True
-                        )
-                    else:
-                        raise TokenInvalid(
-                            "User token is invalid."
-                        )
+                    # Update User.
+                    await self.discord_builder.bind_user_old(
+                        session,
+                        user_id,
+                        str(interaction.user.id)
+                    )
+                    logging.info("%s: %s", interaction.user.id, "Account Updated")
+                    await interaction.response.send_message(
+                        embed=discord.Embed(
+                            title="Account Updated",
+                            color=discord.Color.green()
+                        ),
+                        ephemeral=True
+                    )
                 else:
-                    # Register new user.
-                    user_id = await self.user_builder.select_id_by_token(session, discord_token)
-                    if user_id:
-                        await self.discord_builder.bind_user_new(
-                            session,
-                            user_id,
-                            str(interaction.user.id)
-                        )
-                        await interaction.response.send_message(
-                            f"Account bound.\nUser ID: *{user_id}*",
-                            ephemeral=True
-                        )
-                    else:
-                        raise TokenInvalid(
-                            "User token is invalid."
-                        )
-            except (
-                TokenInvalid
-            ) as e:
-                await interaction.response.send_message(
-                    f"Error: {e}",
-                    ephemeral=True
-                )
+                    await self.discord_builder.bind_user_new(
+                        session,
+                        user_id,
+                        str(interaction.user.id)
+                    )
+                    logging.info("%s: %s", interaction.user.id, "Account Registered")
+                    await interaction.response.send_message(
+                        embed=discord.Embed(
+                            title="Account Registered",
+                            color=discord.Color.green()
+                        ),
+                        ephemeral=True
+                    )
+        except (
+            TokenInvalid
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Binding Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
 
-            finally:
-                # Close Session
-                await session.commit()
-                await session.close()
+        finally:
+            # Close Session
+            await session.commit()
+            await session.close()
 
     @account_bind_token.error
     async def on_account_bind_token_error(
@@ -91,12 +98,7 @@ class AccountBindToken(BaseCog):
         error: app_commands.AppCommandError
     ):
         """On cooldown send remaining time info message."""
-        if isinstance(error, app_commands.CommandOnCooldown):
-            remaining_time = round(error.retry_after)
-            await interaction.response.send_message(
-                f"You are on cooldown. Please try again <t:{round(time.time())+remaining_time}:R>",
-                ephemeral=True
-            )
+        await self.on_cooldown_response(interaction, error)
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""

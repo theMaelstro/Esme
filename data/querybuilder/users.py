@@ -7,7 +7,7 @@ from data.mappings.erupe import (
     Users
 )
 class UserBuilder():
-    """User table query builder."""
+    """Query builder class for Users table."""
     def __init__(self) -> None:
         self.db = CONN
 

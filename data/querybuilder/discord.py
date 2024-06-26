@@ -7,6 +7,7 @@ from data.mappings.custom.tables import (
 )
 
 class DiscordBuilder():
+    """Query builder class for Discord table."""
     def __init__(self) -> None:
         self.db = CONN
 
