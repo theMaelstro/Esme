@@ -2,12 +2,17 @@
 Extension module for BotManagement Cog.
 Managment commands need bot mention message to work.
 """
+from typing import Optional
+
 import discord
 from discord.ext import commands
 
 from settings import CONFIG
 from core import BaseCog
-from core import MissingPermissions, CoroutineFailed
+from core.exceptions import (
+    MissingPermissions,
+    CoroutineFailed
+)
 
 class BotManagement(BaseCog):
     """Cog handling bot admin tasks."""
@@ -15,7 +20,7 @@ class BotManagement(BaseCog):
         self.client = client
 
     @commands.command(pass_context=True)
-    async def sync_commands(self, ctx, arg: discord.Guild) -> None:
+    async def sync_commands(self, ctx, arg: discord.Guild, clear: Optional[bool] = False) -> None:
         """Sync commands for specified guild."""
         try:
             if ctx.author.id not in CONFIG.discord.admin_user_ids:
@@ -24,7 +29,8 @@ class BotManagement(BaseCog):
                 )
 
             self.client.tree.copy_global_to(guild=arg)
-            await self.client.tree.clear_commands(guild=arg)
+            if clear:
+                self.client.tree.clear_commands(guild=arg)
             await self.client.tree.sync(guild=arg)
             await ctx.send(
                 embed=discord.Embed(
@@ -72,9 +78,20 @@ class BotManagement(BaseCog):
                     icon_url=ctx.author.avatar.url
                 )
             )
+        else:
+            await ctx.send(
+                embed=discord.Embed(
+                    title="Commands Sync Failed",
+                    description=error,
+                    color=discord.Color.red()
+                ).set_author(
+                    name=ctx.author.name,
+                    icon_url=ctx.author.avatar.url
+                )
+            )
 
     @commands.command(pass_context=True)
-    async def sync(self, ctx) -> None:
+    async def sync(self, ctx, clear: Optional[bool] = False) -> None:
         """Sync commands globally."""
         try:
             if ctx.author.id not in CONFIG.discord.admin_user_ids:
@@ -82,7 +99,9 @@ class BotManagement(BaseCog):
                     f"{ctx.author.mention} is missing permissions."
                 )
 
-            await self.client.tree.sync()
+            if clear:
+                self.client.tree.clear_commands(guild=None)
+            await self.client.tree.sync(guild=None)
             await ctx.send(
                 embed=discord.Embed(
                     title="Commands Synced",

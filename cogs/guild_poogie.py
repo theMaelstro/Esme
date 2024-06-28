@@ -1,114 +1,21 @@
 """Extension module for GuildPoogie Cog."""
 import logging
-from typing import Callable
 
 import discord
 from discord.ext import commands
 from discord import app_commands
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from settings import CONFIG
 from data.connector import CONN
 from data import GuildBuilder
 from core import BaseCog
-from core import (
+from core.exceptions import (
     CoroutineFailed,
     MissingPermissions
 )
-
-poogie = {
-    0: "Naked Emperor",
-    1: "Soporific White",
-    2: "Black Green Clash",
-    3: "Silent Suit",
-    4: "Bewitching Pink",
-    5: "Nostalgic Stripe",
-    6: "Soothing Sky",
-    7: "Gentle Green",
-    8: "Restless Brown"
-}
-
-class DynamicSelect(discord.ui.Select):
-    def __init__(
-            self,
-            options: list,
-            respone: Callable
-        ) -> None:
-        super().__init__(
-            placeholder="Select Outfits",
-            min_values=0,
-            max_values=len(options),
-            options=options
-        )
-        self.response = respone
-
-    async def callback(self, interaction: discord.Interaction):
-        #await interaction.response.edit_message(content=f"Selected {self.values}")
-        bin_num = ""
-        for key, value in poogie.items():
-            bin_num = f"{value in self.values:d}{bin_num}"
-        try:
-            await self.response(int(bin_num, base=2))
-        except (
-            CoroutineFailed
-        ) as e:
-            logging.error("%s: %s", interaction.user.id, e)
-            await interaction.response.edit_message(
-                view=self.view,
-                embed=discord.Embed(
-                    title="Poogie Update Failed",
-                    description=e,
-                    color=discord.Color.red()
-                )
-            )
-
-        logging.info("%s: %s", interaction.user.id, "Poogie Outfits Updated")
-        await interaction.response.edit_message(
-            view=self.view,
-            embed=discord.Embed(
-                title="Poogie Outfits Updated",
-                description=f"{int(bin_num, base=2)}",
-                color=discord.Color.green()
-            )
-        )
-
-class DynamicSelectView(discord.ui.View):
-    def __init__(
-            self,
-            options: list,
-            *,
-            timeout = 60,
-            session: async_sessionmaker[AsyncSession],
-            query_call: Callable
-        ):
-        super().__init__(timeout=timeout)
-        self.add_item(DynamicSelect(options, self.response))
-        self.session = session
-        self.query_call = query_call
-
-    async def response(self, query_value):
-        if self.query_call:
-            await self.query_call(query_value)
-        await self._close_session()
-        self._disable_all()
-
-    async def _close_session(self):
-        if self.session:
-            # Close Session
-            logging.info("%s", "Poogie Session Closed.")
-            await self.session.commit()
-            await self.session.close()
-
-    def _disable_all(self) -> None:
-        for item in self.children:
-            print(item.__class__, isinstance(item, (discord.ui.Button, DynamicSelect)))
-            if isinstance(item, (discord.ui.Button, DynamicSelect)):
-                self.remove_item(item)
-
-    async def on_timeout(self) -> None:
-        # disable all components
-        await self._close_session()
-        self._disable_all()
+from core.converters import poogie
+from core.view import AppPoogieOutfits
 
 class GuildPoogie(BaseCog):
     """Cog handling updating of guild poogie outfits."""
@@ -150,7 +57,7 @@ class GuildPoogie(BaseCog):
                         )
 
                 my_int = guild.pugi_outfits
-                my_bin = f'{my_int:09b}'
+                my_bin = f'{my_int:09b}'[-9:]
 
                 options = []
                 for k in range(len(my_bin)):
@@ -163,7 +70,7 @@ class GuildPoogie(BaseCog):
                     )
 
                 await interaction.response.send_message(
-                    view=DynamicSelectView(options, session=session, query_call=callback),
+                    view=AppPoogieOutfits(options, session=session, query_call=callback),
                     ephemeral=True
                 )
 

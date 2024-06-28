@@ -10,7 +10,7 @@ from discord import app_commands
 
 from settings import CONFIG
 from core import BaseCog
-from core import MissingPermissions
+from core.exceptions import MissingPermissions
 
 class Road(BaseCog):
     """Cog handling reading road progress data."""

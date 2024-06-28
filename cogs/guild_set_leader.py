@@ -10,7 +10,7 @@ from settings import CONFIG
 from data.connector import CONN
 from data import GuildBuilder
 from core import BaseCog
-from core import (
+from core.exceptions import (
     CoroutineFailed,
     MissingPermissions
 )

@@ -12,7 +12,7 @@ from data.connector import CONN
 from data import GuildBuilder
 from core.view.pagination import Pagination
 from core import BaseCog
-from core import CoroutineFailed
+from core.exceptions import CoroutineFailed
 
 class GuildMembers(BaseCog):
     """Cog handling displaying of guild members in a list."""

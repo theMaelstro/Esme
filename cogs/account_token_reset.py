@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from settings import CONFIG
 from data.connector import CONN
 from data import UserBuilder, DiscordBuilder
-from core import (
+from core.exceptions import (
     CoroutineFailed,
     UsernameIncorrect,
     UnmatchingPasswords,
