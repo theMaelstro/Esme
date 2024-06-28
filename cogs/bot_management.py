@@ -24,6 +24,7 @@ class BotManagement(BaseCog):
                 )
 
             self.client.tree.copy_global_to(guild=arg)
+            await self.client.tree.clear_commands(guild=arg)
             await self.client.tree.sync(guild=arg)
             await ctx.send(
                 embed=discord.Embed(
@@ -50,7 +51,6 @@ class BotManagement(BaseCog):
                 )
             )
 
-
     @sync_commands.error
     async def on_sync_commands_error(
         self,
@@ -66,6 +66,40 @@ class BotManagement(BaseCog):
                         "Missing required positional argument `guild_id`.\n"
                         f"{ctx.author.mention} Please use `sync_commands <guild_id>`."
                     ),
+                    color=discord.Color.red()
+                ).set_author(
+                    name=ctx.author.name,
+                    icon_url=ctx.author.avatar.url
+                )
+            )
+
+    @commands.command(pass_context=True)
+    async def sync(self, ctx) -> None:
+        """Sync commands globally."""
+        try:
+            if ctx.author.id not in CONFIG.discord.admin_user_ids:
+                raise MissingPermissions(
+                    f"{ctx.author.mention} is missing permissions."
+                )
+
+            await self.client.tree.sync()
+            await ctx.send(
+                embed=discord.Embed(
+                    title="Commands Synced",
+                    color=discord.Color.green()
+                ).set_author(
+                    name=ctx.author.name,
+                    icon_url=ctx.author.avatar.url
+                )
+            )
+
+        except (
+            MissingPermissions
+        ) as e:
+            await ctx.send(
+                embed=discord.Embed(
+                    title="Commands Sync Failed",
+                    description=e,
                     color=discord.Color.red()
                 ).set_author(
                     name=ctx.author.name,

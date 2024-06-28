@@ -9,7 +9,12 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from settings import CONFIG
 from data.connector import CONN
 from data import UserBuilder, DiscordBuilder
-from core import UsernameIncorrect, UnmatchingPasswords, DiscordNotRegistered
+from core import (
+    CoroutineFailed,
+    UsernameIncorrect,
+    UnmatchingPasswords,
+    DiscordNotRegistered
+)
 from core import BaseCog
 from core.crypto import check_password
 
@@ -36,10 +41,10 @@ class AccountTokenReset(BaseCog):
         password: str
     ):
         """Reset account token."""
-        try:
-            # Create session
-            async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-            async with async_session() as session:
+        # Create session
+        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+        async with async_session() as session:
+            try:
                 user = await self.user_builder.select_user_by_username(session, username)
                 if user is None:
                     raise UsernameIncorrect(
@@ -57,7 +62,13 @@ class AccountTokenReset(BaseCog):
                         f'{interaction.user.mention} account is not registered.'
                     )
 
-                await self.user_builder.clear_user_token(session, user.id)
+                if not await self.user_builder.clear_user_token(
+                    session,
+                    user.id
+                ):
+                    raise CoroutineFailed(
+                        "Could not update table."
+                    )
                 logging.info("%s: %s", interaction.user.id, "Token Reset")
                 await interaction.response.send_message(
                     embed=discord.Embed(
@@ -68,25 +79,40 @@ class AccountTokenReset(BaseCog):
                     ephemeral=True
                 )
 
-        except (
-            UsernameIncorrect,
-            UnmatchingPasswords,
-            UnmatchingPasswords
-        ) as e:
-            logging.warning("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Token Reset Failed",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
+                # Commit
+                await session.commit()
 
-        finally:
-            # Close Session
-            await session.commit()
-            await session.close()
+            except (
+                UsernameIncorrect,
+                UnmatchingPasswords,
+                UnmatchingPasswords
+            ) as e:
+                logging.warning("%s: %s", interaction.user.id, e)
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Token Reset Failed",
+                        description=e,
+                        color=discord.Color.red()
+                    ),
+                    ephemeral=True
+                )
+
+            except (
+                CoroutineFailed
+            ) as e:
+                logging.error("%s: %s", interaction.user.id, e)
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Token Reset Failed",
+                        description=e,
+                        color=discord.Color.red()
+                    ),
+                    ephemeral=True
+                )
+
+            finally:
+                # Close Session
+                await session.close()
 
     @account_token_reset.error
     async def on_account_token_reset_error(

@@ -9,7 +9,11 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from settings import CONFIG
 from data.connector import CONN
 from data import UserBuilder, DiscordBuilder
-from core import UsernameIncorrect, UnmatchingPasswords
+from core import (
+    CoroutineFailed,
+    UsernameIncorrect,
+    UnmatchingPasswords
+)
 from core import BaseCog
 from core.crypto import check_password
 
@@ -36,10 +40,10 @@ class AccountBindCredentials(BaseCog):
         password: str
     ):
         """Bind user account by using ingame credentials."""
-        try:
-            # Create session
-            async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-            async with async_session() as session:
+        # Create session
+        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+        async with async_session() as session:
+            try:
                 # Get user info.
                 user = await self.user_builder.select_user_by_username(
                     session,
@@ -61,11 +65,15 @@ class AccountBindCredentials(BaseCog):
                 )
                 if discord_id is not None:
                     # Update User
-                    await self.discord_builder.bind_user_old(
+                    if not await self.discord_builder.bind_user_old(
                         session,
                         user.id,
                         str(interaction.user.id)
-                    )
+                    ):
+                        raise CoroutineFailed(
+                            "Could not update table."
+                        )
+
                     logging.info("%s: %s", interaction.user.id, "Account Updated")
                     await interaction.response.send_message(
                         embed=discord.Embed(
@@ -89,33 +97,50 @@ class AccountBindCredentials(BaseCog):
                         ),
                         ephemeral=True
                     )
+                # Commit
+                await session.commit()
 
-        except UsernameIncorrect as e:
-            logging.warning("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Binding Failed",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
+            except (
+                UsernameIncorrect,
+                UnmatchingPasswords
+            ) as e:
+                logging.warning("%s: %s", interaction.user.id, e)
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Binding Failed",
+                        description=e,
+                        color=discord.Color.red()
+                    ),
+                    ephemeral=True
+                )
 
-        except UnmatchingPasswords as e:
-            logging.warning("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Binding Failed",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
+            except (
+                CoroutineFailed
+            ) as e:
+                logging.error("%s: %s", interaction.user.id, e)
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Binding Failed",
+                        description=e,
+                        color=discord.Color.red()
+                    ),
+                    ephemeral=True
+                )
 
-        finally:
-            # Close Session
-            await session.commit()
-            await session.close()
+            except Exception as e:
+                logging.error("%s: %s", interaction.user.id, e)
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Binding Failed",
+                        description="Unhandled exception.",
+                        color=discord.Color.red()
+                    ),
+                    ephemeral=True
+                )
+
+            finally:
+                # Close Session
+                await session.close()
 
     @account_bind_credentials.error
     async def on_account_bind_credentials_error(

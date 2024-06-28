@@ -40,10 +40,11 @@ class CharacterSelect(BaseCog):
     )
     async def character_select(self, interaction: discord.Interaction):
         """Select active character."""
-        try:
-            # Create session
-            async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-            async with async_session() as session:
+        # Create session
+        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+        async with async_session() as session:
+            try:
+            
                 # Check if user is registered.
                 discord_user = await self.discord_builder.select_discord_user(
                     session, str(interaction.user.id)
@@ -125,31 +126,31 @@ class CharacterSelect(BaseCog):
                     public=False,
                 ).navegate()
 
-        except (
-            DiscordNotRegistered
-        ) as e:
-            logging.warning("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Character Select Failed",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
+            except (
+                DiscordNotRegistered
+            ) as e:
+                logging.warning("%s: %s", interaction.user.id, e)
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Character Select Failed",
+                        description=e,
+                        color=discord.Color.red()
+                    ),
+                    ephemeral=True
+                )
 
-        except (
-            CoroutineFailed
-        ) as e:
-            logging.error("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Character Select Failed",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
+            except (
+                CoroutineFailed
+            ) as e:
+                logging.error("%s: %s", interaction.user.id, e)
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Character Select Failed",
+                        description=e,
+                        color=discord.Color.red()
+                    ),
+                    ephemeral=True
+                )
 
     @character_select.error
     async def on_character_select_error(

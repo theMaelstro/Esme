@@ -14,7 +14,7 @@ class GuildBuilder():
         self.db = CONN
 
     async def select_guild(self, session, guild_id: int):
-        """Select Guild rows"""
+        """Select guild id and name row where id = guild_id."""
         stmt = select(Guilds).options(
             load_only(Guilds.id, Guilds.name)
         ).where(
@@ -52,11 +52,40 @@ class GuildBuilder():
         rows = await self.db.select_objects(session, stmt)
         return rows
 
-
-    async def update_guild_leader(self, session, guild_id, leader_id):
+    async def update_guild_leader(
+        self,
+        session,
+        guild_id,
+        leader_id
+    ) -> (int | None):
+        """Update leader id"""
         stmt = (
             update(Guilds)
             .where(Guilds.id == guild_id)
             .values(leader_id=leader_id)
         )
-        await self.db.update_objects(session, stmt)
+        return await self.db.update_objects(session, stmt)
+
+    async def select_poogie_outfits(self, session, guild_id: int):
+        """Select guild poogie outfits where id = guild_id."""
+        stmt = select(Guilds).options(
+            load_only(Guilds.id, Guilds.pugi_outfits)
+        ).where(
+            Guilds.id == guild_id
+        )
+        rows = await self.db.select_object(session, stmt)
+        return rows
+
+    async def update_poogie_outfits(
+        self,
+        session,
+        guild_id: int,
+        pugi_outfits: int
+    ) -> (int | None):
+        """Update poogie outfits."""
+        stmt = (
+            update(Guilds)
+            .where(Guilds.id == guild_id)
+            .values(pugi_outfits=pugi_outfits)
+        )
+        return await self.db.update_objects(session, stmt)

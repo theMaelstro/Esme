@@ -10,7 +10,10 @@ from settings import CONFIG
 from data.connector import CONN
 from data import GuildBuilder
 from core import BaseCog
-from core import MissingPermissions
+from core import (
+    CoroutineFailed,
+    MissingPermissions
+)
 
 class GuildSetLeader(BaseCog):
     """Cog handling guild leader update by admin."""
@@ -34,42 +37,65 @@ class GuildSetLeader(BaseCog):
         leader_id: int
     ):
         """Set guild leader by id."""
-        try:
-            if interaction.author.id not in CONFIG.discord.admin_user_ids:
-                raise MissingPermissions(
-                    f"{interaction.author.mention} is missing permissions."
+        # Create session
+        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+        async with async_session() as session:
+            try:
+                if interaction.author.id not in CONFIG.discord.admin_user_ids:
+                    raise MissingPermissions(
+                        f"{interaction.author.mention} is missing permissions."
+                    )
+
+                if not await self.guild_builder.update_guild_leader(
+                    self,
+                    guild_id,
+                    leader_id
+                ):
+                    raise CoroutineFailed(
+                        "Could not update table."
+                    )
+
+                # Commit Session
+                await session.commit()
+
+                logging.info("%s: %s", interaction.user.id, "Leader Updated")
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Leader Updated",
+                        color=discord.Color.green()
+                    ),
+                    ephemeral=True
                 )
 
-            # Create session
-            async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-            async with async_session() as session:
-                await self.guild_builder.update_guild_leader(self, guild_id, leader_id)
+            except (
+                MissingPermissions
+            ) as e:
+                logging.warning("%s: %s", interaction.user.id, e)
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Leader Update Failed",
+                        description=e,
+                        color=discord.Color.red()
+                    ),
+                    ephemeral=True
+                )
 
-                # Close Session
-                await session.commit()
+            except (
+                CoroutineFailed
+            ) as e:
+                logging.error("%s: %s", interaction.user.id, e)
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Leader Update Failed",
+                        description=e,
+                        color=discord.Color.red()
+                    ),
+                    ephemeral=True
+                )
+
+            finally:
+                # Close session
                 await session.close()
-
-            logging.info("%s: %s", interaction.user.id, "Leader Updated")
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Leader Updated",
-                    color=discord.Color.green()
-                ),
-                ephemeral=True
-            )
-
-        except (
-            MissingPermissions
-        ) as e:
-            logging.warning("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Leader Update Failed",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
 
     @guild_set_leader.error
     async def on_guild_set_leader_error(

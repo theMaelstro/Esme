@@ -10,6 +10,7 @@ from settings import CONFIG
 from data.connector import CONN
 from data import UserBuilder, DiscordBuilder
 from core.exceptions import (
+    CoroutineFailed,
     TokenInvalid
 )
 from core import BaseCog
@@ -32,10 +33,10 @@ class AccountBindToken(BaseCog):
     )
     async def account_bind_token(self, interaction: discord.Interaction, discord_token: str):
         """Bind user account by using token."""
-        try:
-            # Create session
-            async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-            async with async_session() as session:
+        # Create session
+        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+        async with async_session() as session:
+            try:
                 discord_id = await self.discord_builder.check_id(session, str(interaction.user.id))
 
                 user_id = await self.user_builder.select_id_by_token(session, discord_token)
@@ -46,11 +47,15 @@ class AccountBindToken(BaseCog):
 
                 if discord_id is not None:
                     # Update User.
-                    await self.discord_builder.bind_user_old(
+                    if not await self.discord_builder.bind_user_old(
                         session,
                         user_id,
                         str(interaction.user.id)
-                    )
+                    ):
+                        raise CoroutineFailed(
+                            "Could not update table."
+                        )
+
                     logging.info("%s: %s", interaction.user.id, "Account Updated")
                     await interaction.response.send_message(
                         embed=discord.Embed(
@@ -73,23 +78,38 @@ class AccountBindToken(BaseCog):
                         ),
                         ephemeral=True
                     )
-        except (
-            TokenInvalid
-        ) as e:
-            logging.warning("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Binding Failed",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
 
-        finally:
-            # Close Session
-            await session.commit()
-            await session.close()
+                # Commit
+                await session.commit()
+            except (
+                TokenInvalid
+            ) as e:
+                logging.warning("%s: %s", interaction.user.id, e)
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Binding Failed",
+                        description=e,
+                        color=discord.Color.red()
+                    ),
+                    ephemeral=True
+                )
+
+            except (
+                CoroutineFailed
+            ) as e:
+                logging.error("%s: %s", interaction.user.id, e)
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Binding Failed",
+                        description=e,
+                        color=discord.Color.red()
+                    ),
+                    ephemeral=True
+                )
+
+            finally:
+                # Close Session
+                await session.close()
 
     @account_bind_token.error
     async def on_account_bind_token_error(

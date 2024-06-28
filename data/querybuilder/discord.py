@@ -27,14 +27,19 @@ class DiscordBuilder():
         discord = await self.db.select_object(session, stmt)
         return discord
 
-    async def bind_user_old(self, session, user_id: int, discord_id: str):
+    async def bind_user_old(
+        self,
+        session,
+        user_id: int,
+        discord_id: str
+    ) -> (int | None):
         """Update user_id for existing user."""
         stmt = (
             update(Discord)
             .where(Discord.discord_id == discord_id)
             .values(user_id=user_id)
         )
-        await self.db.update_objects(session, stmt)
+        return await self.db.update_objects(session, stmt)
 
     async def bind_user_new(self, session, user_id: int, discord_id: str):
         """Register new user."""
@@ -43,11 +48,16 @@ class DiscordBuilder():
         ]
         await self.db.insert_objects(session, values)
 
-    async def update_character(self, session, character_id: int, discord_id: str):
+    async def update_character(
+        self,
+        session,
+        character_id: int,
+        discord_id: str
+    ) -> (int | None):
         """Update active character_id for existing user."""
         stmt = (
             update(Discord)
             .where(Discord.discord_id == discord_id)
             .values(character_id=character_id)
         )
-        await self.db.update_objects(session, stmt)
+        return await self.db.update_objects(session, stmt)

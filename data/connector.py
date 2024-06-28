@@ -93,13 +93,15 @@ class Connector:
         self,
         session: async_sessionmaker[AsyncSession],
         stmt
-    ) -> None:
+    ) -> (int | None):
         """Update cell."""
         try:
-            await session.execute(stmt)
+            result = await session.execute(stmt)
+            return result.rowcount
 
         except exc.SQLAlchemyError as e:
             logging.error(e)
+        return None
 
     async def insert_objects(
         self,

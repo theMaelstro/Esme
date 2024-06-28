@@ -29,11 +29,15 @@ class UserBuilder():
         user = await self.db.select_object(session, stmt)
         return user
 
-    async def clear_user_token(self, session, user_id: int):
+    async def clear_user_token(
+        self,
+        session,
+        user_id: int
+    ) -> (int | None):
         """Update user by setting discord token to NULL"""
         stmt = (
             update(Users)
             .where(Users.id == user_id)
             .values(discord_token=None)
         )
-        await self.db.update_objects(session, stmt)
+        return await self.db.update_objects(session, stmt)
