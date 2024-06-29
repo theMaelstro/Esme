@@ -6,7 +6,7 @@ import os
 import logging
 
 from asyncpg.exceptions import DuplicateTableError
-from sqlalchemy import exc
+from sqlalchemy import exc, text
 from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
@@ -53,6 +53,19 @@ class Connector:
 
         finally:
             await self.engine.dispose()
+
+    async def execute_raw(
+        self,
+        session: async_sessionmaker[AsyncSession],
+        stmt: text,
+    ) -> None:
+        """Execute raw query."""
+        try:
+            result = await session.execute(stmt)
+            print("CONNECTOR TEST", result)
+
+        except exc.SQLAlchemyError as e:
+            logging.error(e)
 
     async def select_object(
         self,

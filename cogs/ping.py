@@ -24,7 +24,7 @@ class Ping(BaseCog):
     )
     async def ping(self, interaction: discord.Interaction):
         """Ping!"""
-        logging.error("%s: %s", interaction.user.id, "Ping!")
+        logging.info("%s: %s", interaction.user.id, "Ping!")
         await interaction.response.send_message(
             embed=discord.Embed(
                 title="Pong!",

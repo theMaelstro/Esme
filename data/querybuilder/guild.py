@@ -3,7 +3,8 @@ from sqlalchemy.orm import load_only
 
 from data.connector import CONN
 from data.mappings.erupe import (
-    Guilds
+    Guilds,
+    GuildApplications
 )
 from data.mappings.custom.views import (
     GuildCharactersByGuildId
@@ -13,6 +14,7 @@ class GuildBuilder():
     def __init__(self) -> None:
         self.db = CONN
 
+    # Guilds
     async def select_guild(self, session, guild_id: int):
         """Select guild id and name row where id = guild_id."""
         stmt = select(Guilds).options(
@@ -29,26 +31,6 @@ class GuildBuilder():
             load_only(Guilds.id, Guilds.name)
         ).order_by(Guilds.id)
         #).order_by(Guilds.id).offset(0).limit(10)
-        rows = await self.db.select_objects(session, stmt)
-        return rows
-
-    async def select_guild_characters_by_guild_id(self, session, guild_id):
-        """Select guild characters by their guild id"""
-        stmt = select(
-            GuildCharactersByGuildId
-        ).options(
-            load_only(
-                GuildCharactersByGuildId.name,
-                GuildCharactersByGuildId.joined_at_epoch,
-                GuildCharactersByGuildId.order_index
-            )
-
-        ).where(
-            GuildCharactersByGuildId.guild_id == guild_id
-        ).order_by(
-            GuildCharactersByGuildId.order_index
-        )
-
         rows = await self.db.select_objects(session, stmt)
         return rows
 
@@ -89,3 +71,27 @@ class GuildBuilder():
             .values(pugi_outfits=pugi_outfits)
         )
         return await self.db.update_objects(session, stmt)
+
+    # Guild Applications
+
+
+    # Views
+    async def select_guild_characters_by_guild_id(self, session, guild_id):
+        """Select guild characters by their guild id"""
+        stmt = select(
+            GuildCharactersByGuildId
+        ).options(
+            load_only(
+                GuildCharactersByGuildId.name,
+                GuildCharactersByGuildId.joined_at_epoch,
+                GuildCharactersByGuildId.order_index
+            )
+
+        ).where(
+            GuildCharactersByGuildId.guild_id == guild_id
+        ).order_by(
+            GuildCharactersByGuildId.order_index
+        )
+
+        rows = await self.db.select_objects(session, stmt)
+        return rows

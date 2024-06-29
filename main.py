@@ -46,8 +46,9 @@ class MyClient(commands.Bot):
 
     async def setup_hook(self):
         await CONFIG.init_config()
-        await self.load_cogs()
         await CONN.open_connection()
+        await self.load_cogs()
+        #await start_listener()
         # This copies the global commands over to your guild.
         #self.tree.copy_global_to(guild=MY_GUILD)
         #await self.tree.sync(guild=MY_GUILD)

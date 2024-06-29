@@ -75,10 +75,22 @@ class GuildPoogie(BaseCog):
                 )
 
             except (
-                CoroutineFailed,
                 MissingPermissions
             ) as e:
                 logging.warning("%s: %s", interaction.user.id, e)
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Poogie Update Failed",
+                        description=e,
+                        color=discord.Color.red()
+                    ),
+                    ephemeral=True
+                )
+
+            except (
+                CoroutineFailed
+            ) as e:
+                logging.error("%s: %s", interaction.user.id, e)
                 await interaction.response.send_message(
                     embed=discord.Embed(
                         title="Poogie Update Failed",
