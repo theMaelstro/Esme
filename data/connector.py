@@ -14,7 +14,10 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession
 )
 
-from data.mappings import Discord
+from data.mappings import (
+    Discord,
+    GuildCharactersByGuildId
+)
 
 class Connector:
     """Database Connection object."""
@@ -38,9 +41,16 @@ class Connector:
             # Connect to database
             async with self.engine.begin() as conn:
                 # Attempt to create discord registration table.
+                await conn.execute(text(GuildCharactersByGuildId.__query__))
+                logging.info("Guild Characters View prepared.")
+                await conn.commit()
+
+            async with self.engine.begin() as conn:
+                # Attempt to create discord registration table.
                 logging.info("Checking if Discord table exists.")
                 await conn.run_sync(Discord.__table__.create)
                 logging.info("Discord Table created because it was not found.")
+                await conn.commit()
 
         except exc.ProgrammingError as e:
             if isinstance(e.orig.__cause__, DuplicateTableError):

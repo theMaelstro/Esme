@@ -5,9 +5,10 @@ from sqlalchemy.orm import mapped_column
 from ...base_mapping import Base
 
 class GuildCharactersByGuildId(Base):
-    """
-    Guild Characters by Guild Id view object
+    """Guild Characters by Guild Id view object"""
 
+    __query__ = """
+    CREATE OR REPLACE VIEW guild_characters_by_id AS
     SELECT
         guild_characters.id,
         guild_characters.guild_id,
