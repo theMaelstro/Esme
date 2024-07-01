@@ -17,7 +17,7 @@ class GuildApplicationsDetails(Base):
         guilds.name as guild_name,
         t1.name as initiate_name,
         guild_applications.actor_id,
-        t2.name as progenitor_name,
+        t2.name as creator_name,
         round(date_part('epoch'::text, guild_applications.created_at)) AS applied_on
     FROM 
         guild_applications
@@ -34,5 +34,5 @@ class GuildApplicationsDetails(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     guild_name: Mapped[str] = mapped_column(VARCHAR(24))
     initiate_name: Mapped[str] = mapped_column(VARCHAR(15))
-    progenitor_name: Mapped[str] = mapped_column(VARCHAR(15))
+    creator_name: Mapped[str] = mapped_column(VARCHAR(15))
     applied_on: Mapped[float]

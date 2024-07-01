@@ -73,11 +73,13 @@ class AsyncListener(BaseCog):
             ),
             color=discord.Color.blue()
         )
+        # Type of Application
         embed.add_field(
             name=f"{payload['application_type'].title()} to Guild",
             value=re.escape(guild_application.initiate_name),
             inline=False
         )
+        # Time of creation
         embed.add_field(
             name="Issued At",
             value=f"<t:{round(guild_application.applied_on)}:f>",
@@ -86,11 +88,13 @@ class AsyncListener(BaseCog):
         # Add management fields if application is received.
         if payload['application_type'] == 'applied':
             if discord_ids:
+                # Users responsible for action
                 embed.add_field(
                     name="Guild Recruiters",
                     value=f"{''.join(f'<@{str(i)}>' for i in discord_ids)}",
                     inline=False
                 )
+            # Actions
             embed.add_field(
                 name="Accept",
                 value=f"```application id:{payload['id']} accept```",
@@ -101,8 +105,9 @@ class AsyncListener(BaseCog):
                 value=f"```application id:{payload['id']} decline```",
                 inline=False
             )
+        # Application Creator
         embed.set_footer(
-            text=f"Requested by {re.escape(guild_application.progenitor_name)}"
+            text=f"Requested by {re.escape(guild_application.creator_name)}"
         )
 
         # TODO: Add guild application channel to config.
