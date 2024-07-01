@@ -16,7 +16,8 @@ from sqlalchemy.ext.asyncio import (
 
 from data.mappings import (
     Discord,
-    GuildCharactersByGuildId
+    GuildCharactersByGuildId,
+    GuildApplicationsDetails
 )
 
 class Connector:
@@ -43,6 +44,12 @@ class Connector:
                 # Attempt to create discord registration table.
                 await conn.execute(text(GuildCharactersByGuildId.__query__))
                 logging.info("Guild Characters View prepared.")
+                await conn.commit()
+
+            async with self.engine.begin() as conn:
+                # Attempt to create discord registration table.
+                await conn.execute(text(GuildApplicationsDetails.__query__))
+                logging.info("Guild Applications View prepared.")
                 await conn.commit()
 
             async with self.engine.begin() as conn:

@@ -1,3 +1,4 @@
+"""Query Builder module for Users related queries."""
 from sqlalchemy import select, update
 from sqlalchemy.orm import load_only
 

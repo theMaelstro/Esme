@@ -1,13 +1,19 @@
+"""Query Builder module for Guild related queries."""
 from sqlalchemy import select, update
 from sqlalchemy.orm import load_only
 
 from data.connector import CONN
 from data.mappings.erupe import (
     Guilds,
-    GuildApplications
+    GuildCharacters,
+    Characters
+)
+from data.mappings.custom.tables import (
+    Discord
 )
 from data.mappings.custom.views import (
-    GuildCharactersByGuildId
+    GuildCharactersByGuildId,
+    GuildApplicationsDetails
 )
 class GuildBuilder():
     """Query builder class for Guild table."""
@@ -95,3 +101,84 @@ class GuildBuilder():
 
         rows = await self.db.select_objects(session, stmt)
         return rows
+
+    async def select_guild_application_by_id(self, session, application_id: int):
+        """Select guild application by id"""
+        stmt = select(
+            GuildApplicationsDetails
+        ).where(
+            GuildApplicationsDetails.id == application_id
+        )
+
+        rows = await self.db.select_object(session, stmt)
+        return rows
+
+    async def select_recruiter_discord_ids(self, session, guild_id: int):
+        """Select guild recruiters."""
+        # TODO: Break queries into corresponding builders
+        # and use import from for needed methods
+        stmt_leader = (
+            select(
+                Guilds
+            )
+            .options(
+                load_only(Guilds.leader_id)
+            )
+            .where(
+                Guilds.id == guild_id
+            )
+        )
+
+        stmt_recruiters = (
+            select(
+                GuildCharacters
+            )
+            .options(
+                load_only(GuildCharacters.character_id)
+            )
+            .where(
+                GuildCharacters.recruiter is True
+            )
+            .where(
+                GuildCharacters.guild_id == guild_id
+            )
+        )
+
+        character_id_leader = await self.db.select_objects(session, stmt_leader)
+        character_id_recruiters = await self.db.select_objects(session, stmt_recruiters)
+
+        character_ids = []
+        if character_id_leader is not None:
+            for character in character_id_leader:
+                character_ids.append(character.leader_id)
+
+        if character_id_recruiters is not None:
+            for character in character_id_recruiters:
+                character_ids.append(character.character_id)
+
+        if len(character_ids) == 0:
+            return None
+
+        stmt_users = (
+            select(Characters)
+            .options(
+                load_only(Characters.user_id)
+            )
+            .where(Characters.id.in_(character_ids))
+            .distinct()
+        )
+
+        users = await self.db.select_objects(session, stmt_users)
+
+        if users is not None:
+            stmt_discord_ids = (
+                select(Discord)
+                .options(
+                    load_only(Discord.discord_id)
+                )
+                .where(Discord.user_id.in_([user.user_id for user in users]))
+            )
+
+            discord_ids = await self.db.select_objects(session, stmt_discord_ids)
+            return [discord.discord_id for discord in discord_ids]
+        return None

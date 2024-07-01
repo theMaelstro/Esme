@@ -21,7 +21,7 @@ class Guilds(Base):
         TIMESTAMP(timezone=True),
         server_default=func.now(), # pylint: disable=[not-callable]
         nullable=True
-    ) 
+    )
     leader_id: Mapped[int]
     main_motto: Mapped[int] = mapped_column(nullable=True)
     rank_rp: Mapped[int]
