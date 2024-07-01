@@ -26,7 +26,7 @@ class GuildList(BaseCog):
     )
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.realm.cooldown,
+        CONFIG.commands.guild_list.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     async def guild_list(self, interaction: discord.Interaction):
@@ -93,4 +93,5 @@ class GuildList(BaseCog):
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
-    await client.add_cog(GuildList(client))
+    if CONFIG.commands.guild_list.enabled:
+        await client.add_cog(GuildList(client))

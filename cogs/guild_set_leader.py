@@ -27,7 +27,7 @@ class GuildSetLeader(BaseCog):
     )
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.realm.cooldown,
+        CONFIG.commands.guild_set_leader.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     async def guild_set_leader(
@@ -108,4 +108,5 @@ class GuildSetLeader(BaseCog):
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
-    await client.add_cog(GuildSetLeader(client))
+    if CONFIG.commands.guild_set_leader.enabled:
+        await client.add_cog(GuildSetLeader(client))

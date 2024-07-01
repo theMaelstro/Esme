@@ -101,4 +101,4 @@ class Examples(BaseCog):
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
-    await client.add_cog(Examples(client))
+    #await client.add_cog(Examples(client))

@@ -26,7 +26,7 @@ class GuildPoogie(BaseCog):
     @app_commands.command(name="guild_poogie_set", description="Set guild poogie outfits.")
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.realm.cooldown,
+        CONFIG.commands.guild_poogie.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     async def guild_poogie_set(self, interaction: discord.Interaction, guild_id: int):
@@ -124,4 +124,5 @@ class GuildPoogie(BaseCog):
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
-    await client.add_cog(GuildPoogie(client))
+    if CONFIG.commands.guild_poogie.enabled:
+        await client.add_cog(GuildPoogie(client))

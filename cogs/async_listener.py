@@ -111,6 +111,7 @@ class AsyncListener(BaseCog):
         )
 
         # TODO: Add guild application channel to config.
+        # TODO: Add check for guild channel id, if empty raise exception
         channel = self.client.get_channel(1211390842481283145)
         await channel.send(embed=embed)
 

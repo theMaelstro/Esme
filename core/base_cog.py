@@ -33,7 +33,7 @@ class BaseCog(commands.Cog):
             logging.info("%s: %s", interaction.user.id, "Cooldown not expired")
             await interaction.response.send_message(
                 embed=discord.Embed(
-                    title="Binding Failed",
+                    title="Command Failed",
                     description=(
                         "You are on cooldown. Please try again "
                         f"<t:{round(time.time())+remaining_time}:R>"

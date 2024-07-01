@@ -31,7 +31,7 @@ class AccountTokenReset(BaseCog):
     )
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.realm.cooldown,
+        CONFIG.commands.account_bind_token.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     async def account_token_reset(
@@ -125,4 +125,5 @@ class AccountTokenReset(BaseCog):
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
-    await client.add_cog(AccountTokenReset(client))
+    if CONFIG.commands.account_token_reset.enabled:
+        await client.add_cog(AccountTokenReset(client))

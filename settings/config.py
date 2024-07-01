@@ -10,59 +10,52 @@ import dataclasses
 import logging
 
 @dataclasses.dataclass
+class Command:
+    """Class representing single config command settings."""
+    enabled: bool
+    cooldown: float
+
+@dataclasses.dataclass
 class General:
     """Class representing config general settings."""
     debug: bool
     log_level: str
 
 @dataclasses.dataclass
-class Database:
-    """Class representing config database settings."""
-    host: str
-    port: str
-    password: str
-    username: str
-    db_auth: str
-    db_characters: str
-
-@dataclasses.dataclass
 class Discord:
     """Class representing config discord settings."""
     server_id: str
     admin_user_ids: list
+    guild_channel_id: str
     logs_channel_id: str
 
 @dataclasses.dataclass
 class Commands:
     """Class representing config commands settings."""
-    change_password: namedtuple
-    character_list: namedtuple
-    character_online_list: namedtuple
-    guild_list: namedtuple
-    realm: namedtuple
-    recover_account: namedtuple
-    register: namedtuple
-    admin_execute_rc: bool
-    account_details_admin: bool
-    character_details_admin: bool
-    reload_config: bool
+    account_bind_credentials: Command
+    account_bind_token: Command
+    account_token_reset: Command
+    character_select: Command
+    guild_list: Command
+    guild_members: Command
+    guild_poogie: Command
+    guild_set_leader: Command
+    ping: Command
+    road_check: Command
 
 @dataclasses.dataclass
-class Game:
-    """Class representing config game settings."""
-    realm: str
-    restricted_strings: list
+class Features:
+    """Class representing config features settings."""
+    # TODO: Listeners
 
 class Config:
     """Config class object."""
     def __init__(self):
         self.config = configparser.ConfigParser()
         self.general: General
-        self.database: Database
         self.discord: Discord
         self.commands: Commands
-        self.game: Game
-
+        self.features: Features
 
     async def create_config(self):
         """Create default config."""
@@ -74,36 +67,24 @@ class Config:
                 'debug': True,
                 'log_level': 'info'
             },
-            'Database': {
-                'host': 'localhost',
-                'port': '5432',
-                'password': None,
-                'username': None,
-                'db_auth': 'acore_auth',
-                'db_characters': 'acore_characters'
-            },
             'Discord': {
                 'server_id': None,
                 'admin_user_ids': [],
+                'guild_channel_id': None,
                 'logs_channel_id': None
             },
             'Commands': {
-                'change_password': {"enabled": True, "cooldown": 60.0},
-                'character_list': {"enabled": True, "cooldown": 60.0},
-                'character_online_list': {"enabled": True, "cooldown": 60.0},
+                'account_bind_credentials': {"enabled": True, "cooldown": 60.0},
+                'account_bind_token': {"enabled": True, "cooldown": 60.0},
+                'account_token_reset': {"enabled": True, "cooldown": 60.0},
+                'character_select': {"enabled": True, "cooldown": 60.0},
                 'guild_list': {"enabled": True, "cooldown": 60.0},
-                'realm': {"enabled": True, "cooldown": 60.0},
-                'recover_account': {"enabled": True, "cooldown": 60.0},
-                'register': {"enabled": True, "cooldown": 60.0},
-                'admin_execute_rc': {"enabled": True},
-                'account_details_admin': {"enabled": True},
-                'character_details_admin': {"enabled": True},
-                'reload_config': {"enabled": True},
+                'guild_members': {"enabled": True, "cooldown": 60.0},
+                'guild_poogie': {"enabled": True, "cooldown": 60.0},
+                'guild_set_leader': {"enabled": True, "cooldown": 60.0},
+                'ping': {"enabled": True, "cooldown": 60.0},
+                'road_check': {"enabled": True, "cooldown": 60.0}
             },
-            'Game': {
-                'realm': '127.0.0.1',
-                'restricted_strings': ['ADMIN', 'RNDBOT']
-            }
         }
 
         try:
@@ -134,60 +115,54 @@ class Config:
                 my_json['General']['log_level']
             )
 
-            self.database = Database(
-                my_json['Database']['host'],
-                my_json['Database']['port'],
-                my_json['Database']['password'],
-                my_json['Database']['username'],
-                my_json['Database']['db_auth'],
-                my_json['Database']['db_characters'],
-            )
-
             self.discord = Discord(
                 my_json['Discord']['server_id'],
                 my_json['Discord']['admin_user_ids'],
+                my_json['Discord']['guild_channel_id'],
                 my_json['Discord']['logs_channel_id']
             )
 
-            command = namedtuple('Command', ['enabled', 'cooldown'])
             self.commands = Commands(
-                command(
-                    my_json['Commands']['character_list']['enabled'],
-                    my_json['Commands']['character_list']['cooldown']
+                Command(
+                    my_json['Commands']['account_bind_credentials']['enabled'],
+                    my_json['Commands']['account_bind_credentials']['cooldown']
                 ),
-                command(
-                    my_json['Commands']['change_password']['enabled'],
-                    my_json['Commands']['change_password']['cooldown']
+                Command(
+                    my_json['Commands']['account_bind_token']['enabled'],
+                    my_json['Commands']['account_bind_token']['cooldown']
                 ),
-                command(
-                    my_json['Commands']['character_online_list']['enabled'],
-                    my_json['Commands']['character_online_list']['cooldown']
+                Command(
+                    my_json['Commands']['account_token_reset']['enabled'],
+                    my_json['Commands']['account_token_reset']['cooldown']
                 ),
-                command(
+                Command(
+                    my_json['Commands']['character_select']['enabled'],
+                    my_json['Commands']['character_select']['cooldown']
+                ),
+                Command(
                     my_json['Commands']['guild_list']['enabled'],
                     my_json['Commands']['guild_list']['cooldown']
                 ),
-                command(
-                    my_json['Commands']['realm']['enabled'],
-                    my_json['Commands']['realm']['cooldown']
+                Command(
+                    my_json['Commands']['guild_members']['enabled'],
+                    my_json['Commands']['guild_members']['cooldown']
                 ),
-                command(
-                    my_json['Commands']['recover_account']['enabled'],
-                    my_json['Commands']['recover_account']['cooldown']
+                Command(
+                    my_json['Commands']['guild_poogie']['enabled'],
+                    my_json['Commands']['guild_poogie']['cooldown']
                 ),
-                command(
-                    my_json['Commands']['register']['enabled'],
-                    my_json['Commands']['register']['cooldown']
+                Command(
+                    my_json['Commands']['guild_set_leader']['enabled'],
+                    my_json['Commands']['guild_set_leader']['cooldown']
                 ),
-                my_json['Commands']['admin_execute_rc']['enabled'],
-                my_json['Commands']['account_details_admin']['enabled'],
-                my_json['Commands']['character_details_admin']['enabled'],
-                my_json['Commands']['reload_config']['enabled']
-            )
-
-            self.game = Game(
-                my_json['Game']['realm'],
-                my_json['Game']['restricted_strings']
+                Command(
+                    my_json['Commands']['ping']['enabled'],
+                    my_json['Commands']['ping']['cooldown']
+                ),
+                Command(
+                    my_json['Commands']['road_check']['enabled'],
+                    my_json['Commands']['road_check']['cooldown']
+                ),
             )
 
         except Exception as e:
