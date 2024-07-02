@@ -144,9 +144,12 @@ class AsyncListener(BaseCog):
                         location="Renewal Game Server",
                         end_time= utc_time_now + timedelta(days=7),
                         description=(
-                            "*Festival Registration week just started."
-                            "Guild leaders can now sign-up their Guilds for participation."
-                            "Registered Guild will be randomly assigned team color.*"
+                            "*Festival Registration week just started. "
+                            "Guild Leaders and Co-Leaders can now sign-up their Guilds "
+                            "for participation at Wyvernian Lady (Festival & Competition) "
+                            "located on right side of blacksmith enterance (next to Hunting "
+                            "Road lady). Registered Guild will be randomly assigned team color. "
+                            "Guilds in Alliance will be teamed up together.*"
                         ),
                         reason="Festa Trials in game began."
                     ),
@@ -158,9 +161,9 @@ class AsyncListener(BaseCog):
                         location="Renewal Game Server",
                         end_time= utc_time_now + timedelta(days=14),
                         description=(
-                            "*Festival Hunting week just started."
-                            "Take part in game activities to earn Soul Points for your team."
-                            "Remember to donate your gained points."
+                            "*Festival Hunting week just started. "
+                            "Take part in game activities to earn Soul Points for your team. "
+                            "Remember to donate your gained points. "
                             "Lead your team to victory to gain access to unique rewards!*\n"
 
                             "## Secret Quests Schedule\n"
@@ -170,7 +173,7 @@ class AsyncListener(BaseCog):
 
                             "## Rules\n"
                             "- 3 time windows per day, each lasting 2 hours\n"
-                            "- during each 6 secret quests will be available,"
+                            "- during each 6 secret quests will be available, "
                             "awarding additional points to the losing team\n"
                             "- 2 quests per each of **HR5**, **HR6**, **G** ranks"
                         ),
@@ -183,7 +186,13 @@ class AsyncListener(BaseCog):
                         privacy_level=discord.PrivacyLevel.guild_only,
                         location="Renewal Game Server",
                         end_time= utc_time_now + timedelta(days=21),
-                        description="Event DESC",
+                        description=(
+                            "*Festival Reward week has just started. "
+                            "Rewards and Festival Shop can be accessed "
+                            "at Wyvernian Lady (Festival & Competition) "
+                            "located on right side of blacksmith enterance "
+                            "(next to Hunting Road lady).*"
+                        ),
                         reason="Festa Trials in game began."
                     ),
                 }
