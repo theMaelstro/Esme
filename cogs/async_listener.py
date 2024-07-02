@@ -1,5 +1,6 @@
 """Async Listener module with channel handlers for responding to notifiers."""
 import asyncio
+from datetime import datetime, UTC, timedelta
 import logging
 import json
 import re
@@ -11,6 +12,7 @@ import discord
 from discord.ext import commands
 
 from core import BaseCog
+from core.exceptions import CoroutineFailed
 from data.connector import CONN
 from data import GuildBuilder
 
@@ -115,6 +117,105 @@ class AsyncListener(BaseCog):
         channel = self.client.get_channel(1211390842481283145)
         await channel.send(embed=embed)
 
+    async def on_notification_events(
+            self,
+            notification: asyncpg_listen.Notification
+    ) -> None:
+        """
+        Handle events notification payload,
+        create Discord related Events
+        and send embed response to log channel.
+        """
+        logging.info("Received: %s", notification)
+        # Parse payload from json
+        payload =json.loads(notification.payload)
+        if payload['event_type'] == 'festa':
+            utc_time_now = datetime.now(UTC) + timedelta(seconds=10)
+            # TODO: Add guild to config
+            guild = self.client.get_guild(1211390841705332806)
+            channel = self.client.get_channel(1211390842481283145)
+            try:
+                events = {
+                    "Festi Registration Week": await guild.create_scheduled_event(
+                        name = f"Hunter Festival #{payload['id']}: Registration",
+                        start_time = utc_time_now,
+                        entity_type=discord.EntityType.external,
+                        privacy_level=discord.PrivacyLevel.guild_only,
+                        location="Renewal Game Server",
+                        end_time= utc_time_now + timedelta(days=7),
+                        description=(
+                            "*Festival Registration week just started."
+                            "Guild leaders can now sign-up their Guilds for participation."
+                            "Registered Guild will be randomly assigned team color.*"
+                        ),
+                        reason="Festa Trials in game began."
+                    ),
+                    "Festi Hunting Week": await guild.create_scheduled_event(
+                        name = f"Hunter Festival #{payload['id']}: Hunting",
+                        start_time = utc_time_now + timedelta(days=7),
+                        entity_type=discord.EntityType.external,
+                        privacy_level=discord.PrivacyLevel.guild_only,
+                        location="Renewal Game Server",
+                        end_time= utc_time_now + timedelta(days=14),
+                        description=(
+                            "*Festival Hunting week just started."
+                            "Take part in game activities to earn Soul Points for your team."
+                            "Remember to donate your gained points."
+                            "Lead your team to victory to gain access to unique rewards!*\n"
+
+                            "## Secret Quests Schedule\n"
+                            "1. <t:1718618400:t> - <t:1718625600:t>\n"
+                            "2. <t:1718647200:t> - <t:1718654400:t>\n"
+                            "3. <t:1718589600:t> - <t:1718596800:t>\n"
+
+                            "## Rules\n"
+                            "- 3 time windows per day, each lasting 2 hours\n"
+                            "- during each 6 secret quests will be available,"
+                            "awarding additional points to the losing team\n"
+                            "- 2 quests per each of **HR5**, **HR6**, **G** ranks"
+                        ),
+                        reason="Festa Trials in game began."
+                    ),
+                    "Festi Rewards Week": await guild.create_scheduled_event(
+                        name = f"Hunter Festival #{payload['id']}: Rewards",
+                        start_time = utc_time_now + timedelta(days=14),
+                        entity_type=discord.EntityType.external,
+                        privacy_level=discord.PrivacyLevel.guild_only,
+                        location="Renewal Game Server",
+                        end_time= utc_time_now + timedelta(days=21),
+                        description="Event DESC",
+                        reason="Festa Trials in game began."
+                    ),
+                }
+                for key, event in events.items():
+                    if event:
+                        logging.info("Created Event: %s", event.name)
+                        await channel.send(
+                            embed=discord.Embed(
+                                title=event.name,
+                                description=(
+                                    "# Created Event\n"
+                                    f"Start: {discord.utils.format_dt(event.start_time, 'f')}\n"
+                                    f"End: {discord.utils.format_dt(event.end_time, 'f')}"
+                                ),
+                                color=discord.Color.green()
+                            )
+                        )
+                    else:
+                        raise CoroutineFailed(
+                            f"Could not create Event: {key}"
+                        )
+
+            except (
+                CoroutineFailed
+            ) as e:
+                logging.error("Hunter Festival: %s", e)
+
+            except (
+                Exception
+            ) as e:
+                logging.error("Unhandled exception: %s", e)
+
     async def start_listeners(self) -> dict:
         """Prepare and start listener tasks."""
         # Start session
@@ -145,6 +246,17 @@ class AsyncListener(BaseCog):
                 text("""CREATE OR REPLACE TRIGGER guild_application_notify_trigger
                 AFTER INSERT ON guild_applications
                 FOR EACH ROW EXECUTE PROCEDURE notify_new_guild_application();"""),
+
+                # Event
+                text("""CREATE OR REPLACE FUNCTION notify_new_events() RETURNS trigger AS $$
+                BEGIN
+                PERFORM pg_notify('events_notification', row_to_json(NEW)::text);
+                RETURN NEW;
+                END;"""
+                "$$ LANGUAGE plpgsql;"""),
+                text("""CREATE OR REPLACE TRIGGER events_notify_trigger
+                AFTER INSERT ON events
+                FOR EACH ROW EXECUTE PROCEDURE notify_new_events();"""),
 
                 text("COMMIT;")
             ]
@@ -182,6 +294,13 @@ class AsyncListener(BaseCog):
                 "guild_application": asyncio.create_task(
                     listener.run(
                         {"guild_application_notification": self.on_notification_guild_applications},
+                        policy=asyncpg_listen.ListenPolicy.ALL,
+                        notification_timeout=-1
+                    )
+                ),
+                "event": asyncio.create_task(
+                    listener.run(
+                        {"events_notification": self.on_notification_events},
                         policy=asyncpg_listen.ListenPolicy.ALL,
                         notification_timeout=-1
                     )
