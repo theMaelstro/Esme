@@ -16,6 +16,18 @@ class Command:
     cooldown: float
 
 @dataclasses.dataclass
+class Listener:
+    """Class representing single config listener settings."""
+    enabled: bool
+
+@dataclasses.dataclass
+class Listeners:
+    """Class representing config listeners settings."""
+    discord: Listener
+    guild_applications: Listener
+    events: Listener
+
+@dataclasses.dataclass
 class General:
     """Class representing config general settings."""
     debug: bool
@@ -25,7 +37,10 @@ class General:
 class Discord:
     """Class representing config discord settings."""
     server_id: str
+    # TODO: More complex administration permissions with access levels
+    # where 0 = admin
     admin_user_ids: list
+    guild_id: str
     guild_channel_id: str
     logs_channel_id: str
 
@@ -46,7 +61,7 @@ class Commands:
 @dataclasses.dataclass
 class Features:
     """Class representing config features settings."""
-    # TODO: Listeners
+    listeners: Listeners
 
 class Config:
     """Config class object."""
@@ -70,6 +85,7 @@ class Config:
             'Discord': {
                 'server_id': None,
                 'admin_user_ids': [],
+                'guild_id': None,
                 'guild_channel_id': None,
                 'logs_channel_id': None
             },
@@ -85,6 +101,13 @@ class Config:
                 'ping': {"enabled": True, "cooldown": 60.0},
                 'road_check': {"enabled": True, "cooldown": 60.0}
             },
+            'Features': {
+                'Listeners': {
+                    'discord': False,
+                    'guild_applications': True,
+                    'events': True
+                }
+            }
         }
 
         try:
@@ -118,6 +141,7 @@ class Config:
             self.discord = Discord(
                 my_json['Discord']['server_id'],
                 my_json['Discord']['admin_user_ids'],
+                my_json['Discord']['guild_id'],
                 my_json['Discord']['guild_channel_id'],
                 my_json['Discord']['logs_channel_id']
             )
@@ -163,6 +187,20 @@ class Config:
                     my_json['Commands']['road_check']['enabled'],
                     my_json['Commands']['road_check']['cooldown']
                 ),
+            )
+
+            self.features = Features(
+                Listeners(
+                    Listener(
+                        my_json['Features']['Listeners']['discord']
+                    ),
+                    Listener(
+                        my_json['Features']['Listeners']['guild_applications']
+                    ),
+                    Listener(
+                        my_json['Features']['Listeners']['events']
+                    )
+                )
             )
 
         except Exception as e:

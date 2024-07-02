@@ -54,3 +54,6 @@ class CoroutineFailed(Exception):
     Coroutine returned False or None.
     Following task execution not possible.
     """
+
+class SettingNotConfigured(Exception):
+    """Setting not configured in json file."""

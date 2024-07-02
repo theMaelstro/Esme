@@ -12,9 +12,13 @@ import discord
 from discord.ext import commands
 
 from core import BaseCog
-from core.exceptions import CoroutineFailed
+from core.exceptions import (
+    CoroutineFailed,
+    SettingNotConfigured
+)
 from data.connector import CONN
 from data import GuildBuilder
+from settings import CONFIG
 
 class AsyncListener(BaseCog):
     """Cog holding listener and handlers."""
@@ -28,9 +32,13 @@ class AsyncListener(BaseCog):
         notification: asyncpg_listen.NotificationOrTimeout
     ) -> None:
         """Example handler for notification."""
-        logging.info("Received: %s", notification)
-        if isinstance(notification, asyncpg_listen.listener.Notification):
-            logging.info("Notification received: %s", notification)
+        logging.info("Notification received: %s", notification)
+        try:
+            channel = self.client.get_channel(CONFIG.discord.logs_channel_id)
+            if not channel:
+                raise SettingNotConfigured(
+                    "Logs channel not configured."
+                )
             embed=discord.Embed(
                     title="New User Appeared",
                     description=(
@@ -40,8 +48,17 @@ class AsyncListener(BaseCog):
                     color=discord.Color.green()
                 )
             embed.set_image(url="https://media1.tenor.com/m/dCKRbYgimZsAAAAd/asby-vtuber.gif")
-            channel = self.client.get_channel(1211390842481283145)
             await channel.send(embed=embed)
+
+        except (
+            SettingNotConfigured
+        ) as e:
+            logging.warning("Config: %s", e)
+
+        except (
+            Exception
+        ) as e:
+            logging.error("Unhandled exception: %s", e)
 
     async def on_notification_guild_applications(
             self,
@@ -52,70 +69,83 @@ class AsyncListener(BaseCog):
         and send embed results.
         """
         logging.info("Received: %s", notification)
-        # Parse payload from json
-        payload =json.loads(notification.payload)
-        # Start session
-        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-        async with async_session() as session:
-            guild_application = await self.guild_builder.select_guild_application_by_id(
-                session,
-                payload['id']
-            )
-            discord_ids = await self.guild_builder.select_recruiter_discord_ids(
-                session,
-                payload['guild_id']
-            )
-            await session.close()
+        try:
+            # Create channel
+            channel = self.client.get_channel(CONFIG.discord.guild_channel_id)
+            if not channel:
+                raise SettingNotConfigured(
+                    "Guild Applications Channel not configured."
+                )
+            # Parse payload from json
+            payload =json.loads(notification.payload)
+            # Start session
+            async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+            async with async_session() as session:
+                guild_application = await self.guild_builder.select_guild_application_by_id(
+                    session,
+                    payload['id']
+                )
+                discord_ids = await self.guild_builder.select_recruiter_discord_ids(
+                    session,
+                    payload['guild_id']
+                )
+                await session.close()
 
-        # Prepare embed
-        embed=discord.Embed(
-            title="New Guild Application Pending",
-            description=(
-                f"# {re.escape(guild_application.guild_name)}\n"
-            ),
-            color=discord.Color.blue()
-        )
-        # Type of Application
-        embed.add_field(
-            name=f"{payload['application_type'].title()} to Guild",
-            value=re.escape(guild_application.initiate_name),
-            inline=False
-        )
-        # Time of creation
-        embed.add_field(
-            name="Issued At",
-            value=f"<t:{round(guild_application.applied_on)}:f>",
-            inline=False
-        )
-        # Add management fields if application is received.
-        if payload['application_type'] == 'applied':
-            if discord_ids:
-                # Users responsible for action
+            # Prepare embed
+            embed=discord.Embed(
+                title="New Guild Application Pending",
+                description=(
+                    f"# {re.escape(guild_application.guild_name)}\n"
+                ),
+                color=discord.Color.blue()
+            )
+            # Type of Application
+            embed.add_field(
+                name=f"{payload['application_type'].title()} to Guild",
+                value=re.escape(guild_application.initiate_name),
+                inline=False
+            )
+            # Time of creation
+            embed.add_field(
+                name="Issued At",
+                value=f"<t:{round(guild_application.applied_on)}:f>",
+                inline=False
+            )
+            # Add management fields if application is received.
+            if payload['application_type'] == 'applied':
+                if discord_ids:
+                    # Users responsible for action
+                    embed.add_field(
+                        name="Guild Recruiters",
+                        value=f"{''.join(f'<@{str(i)}>' for i in discord_ids)}",
+                        inline=False
+                    )
+                # Actions
                 embed.add_field(
-                    name="Guild Recruiters",
-                    value=f"{''.join(f'<@{str(i)}>' for i in discord_ids)}",
+                    name="Accept",
+                    value=f"```application id:{payload['id']} accept```",
                     inline=False
                 )
-            # Actions
-            embed.add_field(
-                name="Accept",
-                value=f"```application id:{payload['id']} accept```",
-                inline=False
+                embed.add_field(
+                    name="Decline",
+                    value=f"```application id:{payload['id']} decline```",
+                    inline=False
+                )
+            # Application Creator
+            embed.set_footer(
+                text=f"Requested by {re.escape(guild_application.creator_name)}"
             )
-            embed.add_field(
-                name="Decline",
-                value=f"```application id:{payload['id']} decline```",
-                inline=False
-            )
-        # Application Creator
-        embed.set_footer(
-            text=f"Requested by {re.escape(guild_application.creator_name)}"
-        )
+            await channel.send(embed=embed)
 
-        # TODO: Add guild application channel to config.
-        # TODO: Add check for guild channel id, if empty raise exception
-        channel = self.client.get_channel(1211390842481283145)
-        await channel.send(embed=embed)
+        except (
+            SettingNotConfigured
+        ) as e:
+            logging.warning("Config: %s", e)
+
+        except (
+            Exception
+        ) as e:
+            logging.error("Unhandled exception: %s", e)
 
     async def on_notification_events(
             self,
@@ -128,13 +158,20 @@ class AsyncListener(BaseCog):
         """
         logging.info("Received: %s", notification)
         # Parse payload from json
-        payload =json.loads(notification.payload)
-        if payload['event_type'] == 'festa':
-            utc_time_now = datetime.now(UTC) + timedelta(seconds=10)
-            # TODO: Add guild to config
-            guild = self.client.get_guild(1211390841705332806)
-            channel = self.client.get_channel(1211390842481283145)
-            try:
+        try:
+            guild = self.client.get_guild(CONFIG.discord.guild_id)
+            if not guild:
+                raise SettingNotConfigured(
+                    "Guild Applications channel not configured."
+                )
+            channel = self.client.get_channel(CONFIG.discord.logs_channel_id)
+            if not channel:
+                raise SettingNotConfigured(
+                    "Logs channel not configured."
+                )
+            payload =json.loads(notification.payload)
+            if payload['event_type'] == 'festa':
+                utc_time_now = datetime.now(UTC) + timedelta(seconds=10)
                 events = {
                     "Festi Registration Week": await guild.create_scheduled_event(
                         name = f"Hunter Festival #{payload['id']}: Registration",
@@ -215,15 +252,20 @@ class AsyncListener(BaseCog):
                             f"Could not create Event: {key}"
                         )
 
-            except (
-                CoroutineFailed
-            ) as e:
-                logging.error("Hunter Festival: %s", e)
+        except (
+            SettingNotConfigured
+        ) as e:
+            logging.warning("Config: %s", e)
 
-            except (
-                Exception
-            ) as e:
-                logging.error("Unhandled exception: %s", e)
+        except (
+            CoroutineFailed
+        ) as e:
+            logging.error("Hunter Festival: %s", e)
+
+        except (
+            Exception
+        ) as e:
+            logging.error("Unhandled exception: %s", e)
 
     async def start_listeners(self) -> dict:
         """Prepare and start listener tasks."""
@@ -291,30 +333,32 @@ class AsyncListener(BaseCog):
                 )
             )
 
-            # Prepare listener tasks and return dict.
-            return {
-                "discord": asyncio.create_task(
+            listeners = {}
+            if CONFIG.features.listeners.discord.enabled:
+                listeners["discord"] = asyncio.create_task(
                     listener.run(
                         {"discord_notification": self.on_notification_discord},
                         policy=asyncpg_listen.ListenPolicy.ALL,
                         notification_timeout=-1
                     )
-                ),
-                "guild_application": asyncio.create_task(
+                )
+            if CONFIG.features.listeners.guild_applications.enabled:
+                listeners["guild_application"] = asyncio.create_task(
                     listener.run(
                         {"guild_application_notification": self.on_notification_guild_applications},
                         policy=asyncpg_listen.ListenPolicy.ALL,
                         notification_timeout=-1
                     )
-                ),
-                "event": asyncio.create_task(
-                    listener.run(
-                        {"events_notification": self.on_notification_events},
-                        policy=asyncpg_listen.ListenPolicy.ALL,
-                        notification_timeout=-1
-                    )
                 )
-            }
+            if CONFIG.features.listeners.events.enabled:
+                listeners["event"] = asyncio.create_task(
+                     listener.run(
+                         {"events_notification": self.on_notification_events},
+                         policy=asyncpg_listen.ListenPolicy.ALL,
+                         notification_timeout=-1
+                     )
+                 )
+            return listeners
 
     async def cog_load(self) -> None:
         try:
