@@ -1,12 +1,18 @@
 """
 Discord Embed Pagination by Hazzu
 https://stackoverflow.com/questions/76247812/how-to-create-pagination-embed-menu-in-discord-py
+
+Edited by theMaelstro
 """
 
 from typing import Callable, Optional
 import discord
 
 class Pagination(discord.ui.View):
+    """
+    Paginator view by Hazzu.
+    Uses three interaction buttons to browse pages.
+    """
     def __init__(self, interaction: discord.Interaction, get_page: Callable, public = True):
         self.interaction = interaction
         self.get_page = get_page
@@ -16,28 +22,42 @@ class Pagination(discord.ui.View):
         super().__init__(timeout=100)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        """Check view owner."""
         if interaction.user == self.interaction.user:
             return True
-        else:
-            emb = discord.Embed(
-                description=f"Only the author of the command can perform this action.",
-                color=discord.Color.red()
-            )
-            await interaction.response.send_message(embed=emb, ephemeral=True)
-            return False
+
+        emb = discord.Embed(
+            description="Only the author of the command can perform this action.",
+            color=discord.Color.red()
+        )
+        await interaction.response.send_message(
+            embed=emb,
+            ephemeral=True
+        )
+        return False
 
     async def navegate(self):
         emb, self.total_pages = await self.get_page(self.index)
         if self.total_pages == 1:
-            await self.interaction.response.send_message(embed=emb, ephemeral=self.public)
+            await self.interaction.response.send_message(
+                embed=emb,
+                ephemeral=self.public
+            )
         elif self.total_pages > 1:
             self.update_buttons()
-            await self.interaction.response.send_message(embed=emb, view=self, ephemeral=self.public)
+            await self.interaction.response.send_message(
+                embed=emb,
+                view=self,
+                ephemeral=self.public
+            )
 
     async def edit_page(self, interaction: discord.Interaction):
         emb, self.total_pages = await self.get_page(self.index)
         self.update_buttons()
-        await interaction.response.edit_message(embed=emb, view=self)
+        await interaction.response.edit_message(
+            embed=emb,
+            view=self
+        )
 
     def update_buttons(self):
         if self.index > self.total_pages // 2:
@@ -72,4 +92,5 @@ class Pagination(discord.ui.View):
 
     @staticmethod
     def compute_total_pages(total_results: int, results_per_page: int) -> int:
+        """Return total number of pages for given results per page."""
         return ((total_results - 1) // results_per_page) + 1
