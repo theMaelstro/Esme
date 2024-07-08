@@ -4,6 +4,7 @@ PSQL Connector
 from __future__ import annotations
 import os
 import logging
+import sys
 
 from asyncpg.exceptions import DuplicateTableError
 from sqlalchemy import exc, text
@@ -67,6 +68,10 @@ class Connector:
 
         except exc.SQLAlchemyError as e:
             logging.error(e)
+
+        except Exception as e:
+            logging.critical("Unhandled database error. Could not connect to postgres: %s", e)
+            sys.exit(1)
 
         finally:
             await self.engine.dispose()
