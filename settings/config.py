@@ -4,7 +4,6 @@ with methods to handle reading and writing of config.ini file.
 """
 import os.path
 import json
-from collections import namedtuple
 import configparser
 import dataclasses
 import logging
