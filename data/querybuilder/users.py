@@ -42,3 +42,17 @@ class UserBuilder():
             .values(discord_token=None)
         )
         return await self.db.update_objects(session, stmt)
+
+    async def update_user_psn(
+        self,
+        session,
+        user_id: int,
+        psn_id: str
+    ) -> (int | None):
+        """Update user psn_id by user_id."""
+        stmt = (
+            update(Users)
+            .where(Users.id == user_id)
+            .values(psn_id=psn_id)
+        )
+        return await self.db.update_objects(session, stmt)
