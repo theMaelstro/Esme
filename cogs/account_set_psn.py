@@ -36,7 +36,7 @@ class SetPsn(BaseCog):
         interaction: discord.Interaction,
         psn_name: str
     ):
-        """Reset account token."""
+        """Update user bound psn id."""
         # Create session
         async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
         async with async_session() as session:

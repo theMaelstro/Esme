@@ -1,6 +1,6 @@
 """Async Listener module with channel handlers for responding to notifiers."""
 import asyncio
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, timezone, timedelta
 import logging
 import json
 import re
@@ -171,7 +171,7 @@ class AsyncListener(BaseCog):
                 )
             payload =json.loads(notification.payload)
             if payload['event_type'] == 'festa':
-                utc_time_now = datetime.now(UTC) + timedelta(seconds=10)
+                utc_time_now = datetime.now(timezone.UTC) + timedelta(seconds=10)
                 events = {
                     "Festi Registration Week": await guild.create_scheduled_event(
                         name = f"Hunter Festival #{payload['id']}: Registration",
