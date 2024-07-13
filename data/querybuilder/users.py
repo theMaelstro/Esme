@@ -43,6 +43,14 @@ class UserBuilder():
         )
         return await self.db.update_objects(session, stmt)
 
+    async def select_user_psn(self, session, psn_id: str):
+        """Select user psn_id."""
+        stmt = select(Users).options(
+            load_only(Users.id, Users.psn_id)
+        ).where(Users.psn_id == psn_id)
+        rows = await self.db.select_objects(session, stmt)
+        return rows
+
     async def update_user_psn(
         self,
         session,

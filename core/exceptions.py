@@ -37,6 +37,9 @@ class UsernameAlreadyRegistered(Exception):
 class UsernameIncorrect(Exception):
     """Username is already registered in database."""
 
+class PsnIDAlreadyRegistered(Exception):
+    """Psn ID is already reegistered to a different user."""
+
 class RestrictedUsername(Exception):
     """Username is restricted or contains inappropriate words."""
 
