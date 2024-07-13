@@ -11,7 +11,8 @@ from data.connector import CONN
 from data import UserBuilder, DiscordBuilder
 from core.exceptions import (
     CoroutineFailed,
-    DiscordNotRegistered
+    DiscordNotRegistered,
+    PsnIDAlreadyRegistered
 )
 from core import BaseCog
 
@@ -50,6 +51,18 @@ class SetPsn(BaseCog):
                         "No account registered for this discord user."
                     )
 
+                user = await self.user_builder.select_user_psn(
+                    session,
+                    psn_name
+                )
+                if user:
+                    print(user)
+                    print(user.id)
+                    if not user.id == discord_user.user_id:
+                        raise PsnIDAlreadyRegistered(
+                            "Psn ID already registered. Please use different Psn ID."
+                        )
+
                 if not await self.user_builder.update_user_psn(
                     session,
                     discord_user.user_id,
@@ -72,7 +85,8 @@ class SetPsn(BaseCog):
                 await session.commit()
 
             except (
-                DiscordNotRegistered
+                DiscordNotRegistered,
+                PsnIDAlreadyRegistered
             ) as e:
                 logging.warning("%s: %s", interaction.user.id, e)
                 await interaction.response.send_message(
