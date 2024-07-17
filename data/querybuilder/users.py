@@ -48,7 +48,7 @@ class UserBuilder():
         stmt = select(Users).options(
             load_only(Users.id, Users.psn_id)
         ).where(Users.psn_id == psn_id)
-        rows = await self.db.select_objects(session, stmt)
+        rows = await self.db.select_object(session, stmt)
         return rows
 
     async def update_user_psn(
