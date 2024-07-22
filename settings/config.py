@@ -35,6 +35,7 @@ class General:
 @dataclasses.dataclass
 class Discord:
     """Class representing config discord settings."""
+    token: str
     server_id: str
     # TODO: More complex administration permissions with access levels
     # where 0 = admin
@@ -42,6 +43,15 @@ class Discord:
     guild_id: str
     guild_channel_id: str
     logs_channel_id: str
+
+@dataclasses.dataclass
+class Database:
+    """Class representing config database settings."""
+    host: str
+    username: str
+    password: str
+    port: int
+    database: str
 
 @dataclasses.dataclass
 class Commands:
@@ -69,10 +79,11 @@ class Config:
         self.config = configparser.ConfigParser()
         self.general: General
         self.discord: Discord
+        self.database: Database
         self.commands: Commands
         self.features: Features
 
-    async def create_config(self):
+    def create_config(self):
         """Create default config."""
 
         logging.info("Creating config.")
@@ -83,11 +94,19 @@ class Config:
                 'log_level': 'info'
             },
             'Discord': {
+                'token': None,
                 'server_id': None,
                 'admin_user_ids': [],
                 'guild_id': None,
                 'guild_channel_id': None,
                 'logs_channel_id': None
+            },
+            "Database": {
+                "host": "localhost",
+                "username": "postgres",
+                "password": None,
+                "port": 5432,
+                "database": "erupe"
             },
             'Commands': {
                 'account_bind_credentials': {"enabled": True, "cooldown": 60.0},
@@ -126,7 +145,7 @@ class Config:
         except Exception as e:
             logging.error("CONFIG CREATE: %s", e)
 
-    async def read_config(self):
+    def read_config(self):
         """Read config."""
 
         try:
@@ -140,11 +159,20 @@ class Config:
             )
 
             self.discord = Discord(
+                my_json['Discord']['token'],
                 my_json['Discord']['server_id'],
                 my_json['Discord']['admin_user_ids'],
                 my_json['Discord']['guild_id'],
                 my_json['Discord']['guild_channel_id'],
                 my_json['Discord']['logs_channel_id']
+            )
+
+            self.database = Database(
+                my_json['Database']['host'],
+                my_json['Database']['username'],
+                my_json['Database']['password'],
+                my_json['Database']['port'],
+                my_json['Database']['database'],
             )
 
             self.commands = Commands(
@@ -211,7 +239,7 @@ class Config:
         except Exception as e:
             logging.error("CONFIG CREATE: %s", e)
 
-    async def init_config(self):
+    def init_config(self):
         """Initialize config, check if valid config exists."""
         try:
             # Check if file exists.
@@ -220,11 +248,11 @@ class Config:
                 raise FileNotFoundError
 
             logging.info("Config found.")
-            await self.read_config()
+            self.read_config()
 
         except FileNotFoundError:
             logging.error("Config not found.")
-            await self.create_config()
-            await self.read_config()
+            self.create_config()
+            self.read_config()
 
 CONFIG = Config()

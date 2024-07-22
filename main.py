@@ -4,17 +4,18 @@ Main Module
 import os
 import logging
 
-from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 
+import discord.ext
 from settings.logger import init_logger
 from settings import CONFIG
 from data.connector import CONN
 
 init_logger()
-load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
+CONFIG.init_config()
+
+print(CONFIG.__dict__)
 
 class MyClient(commands.Bot):
     """Class representing bot client."""
@@ -45,7 +46,6 @@ class MyClient(commands.Bot):
         return True
 
     async def setup_hook(self):
-        await CONFIG.init_config()
         await CONN.open_connection()
         await self.load_cogs()
         #await start_listener()
@@ -61,4 +61,4 @@ async def on_ready():
     """On bot initialized."""
     logging.info('Logged in as %s (ID: %s)', client.user, client.user.id)
 
-client.run(TOKEN, log_handler=None)
+client.run(CONFIG.discord.token, log_handler=None)

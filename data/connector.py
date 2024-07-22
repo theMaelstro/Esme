@@ -2,7 +2,6 @@
 PSQL Connector
 """
 from __future__ import annotations
-import os
 import logging
 import sys
 
@@ -15,6 +14,7 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession
 )
 
+from settings import CONFIG
 from data.mappings import (
     Discord,
     GuildCharactersByGuildId,
@@ -24,19 +24,22 @@ from data.mappings import (
 class Connector:
     """Database Connection object."""
     def __init__(self) -> None:
-        self.url_object = URL.create(
-            "postgresql+asyncpg",
-            username=os.getenv('DB_USERNAME'),
-            password=os.getenv('DB_PASSWORD'),
-            host=os.getenv('DB_HOST'),
-            port=os.getenv('DB_PORT'),
-            database=os.getenv('DB_NAME'),
-        )
+        self.url_object = None
         self.engine = None
 
     async def open_connection(self) -> None:
         """Estabilish connection with database."""
         try:
+            # Init url object.
+            self.url_object = URL.create(
+                "postgresql+asyncpg",
+                username=CONFIG.database.username,
+                password=CONFIG.database.password,
+                host=CONFIG.database.host,
+                port=CONFIG.database.port,
+                database=CONFIG.database.database,
+            )
+
             # Create engine.
             self.engine = create_async_engine(self.url_object, echo=False, hide_parameters=True)
 
@@ -84,7 +87,6 @@ class Connector:
         """Execute raw query."""
         try:
             result = await session.execute(stmt)
-            print("CONNECTOR TEST", result)
 
         except exc.SQLAlchemyError as e:
             logging.error(e)
