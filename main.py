@@ -15,8 +15,6 @@ from data.connector import CONN
 init_logger()
 CONFIG.init_config()
 
-print(CONFIG.__dict__)
-
 class MyClient(commands.Bot):
     """Class representing bot client."""
     # pylint: disable=redefined-outer-name
