@@ -102,7 +102,7 @@ async def m_bind_token(
 
 class ModalBindToken(
     discord.ui.Modal,
-    title='Bind Credentials'
+    title='Bind Token'
 ):
     """Discord Modal view class."""
     def __init__(

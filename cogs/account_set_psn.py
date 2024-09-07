@@ -16,6 +16,126 @@ from core.exceptions import (
 )
 from core import BaseCog
 
+async def m_set_psn(
+    interaction: discord.Interaction,
+    user_builder: UserBuilder,
+    discord_builder: DiscordBuilder,
+    psn_name: str
+):
+    """Update user bound psn id."""
+    # Create session
+    async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+    async with async_session() as session:
+        try:
+            # Check if user is registered.
+            discord_user = await discord_builder.select_discord_user(
+                session, str(interaction.user.id)
+            )
+            if discord_user is None:
+                raise DiscordNotRegistered(
+                    "No account registered for this discord user."
+                )
+
+            user = await user_builder.select_user_psn(
+                session,
+                psn_name
+            )
+            if user:
+                print(user)
+                print(user.id)
+                if not user.id == discord_user.user_id:
+                    raise PsnIDAlreadyRegistered(
+                        "Psn ID already registered. Please use different Psn ID."
+                    )
+
+            if not await user_builder.update_user_psn(
+                session,
+                discord_user.user_id,
+                psn_name
+            ):
+                raise CoroutineFailed(
+                    "Could not update table."
+                )
+
+            logging.info("%s: %s", interaction.user.id, "Token Reset")
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Psn ID Updated.",
+                    color=discord.Color.green()
+                ),
+                ephemeral=True
+            )
+
+            # Commit
+            await session.commit()
+
+        except (
+            DiscordNotRegistered,
+            PsnIDAlreadyRegistered
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Psn ID update failed.",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
+        except (
+            CoroutineFailed
+        ) as e:
+            logging.error("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Psn ID update failed.",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
+        finally:
+            # Close Session
+            await session.close()
+
+class ModalPsn(
+    discord.ui.Modal,
+    title='Set PSN'
+):
+    """Discord Modal view class."""
+    def __init__(
+        self,
+        user_builder: UserBuilder,
+        discord_builder: DiscordBuilder,
+    ):
+        super().__init__()
+        self.user_builder = user_builder
+        self.discord_builder = discord_builder
+    psn = discord.ui.TextInput(
+        label='PSN ID',
+        placeholder='Type in your PSN ID...',
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await m_set_psn(
+            interaction,
+            self.user_builder,
+            self.discord_builder,
+            self.psn.value
+        )
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+        logging.error("%s: %s %s %s", interaction.user.id, type(error), error, error.__traceback__)
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                title="Psn ID update failed.",
+                color=discord.Color.red()
+            ),
+            ephemeral=True
+        )
+
 class SetPsn(BaseCog):
     """Cog handling setting and updating user psn id."""
     def __init__(self, client: commands.Bot):
@@ -34,86 +154,12 @@ class SetPsn(BaseCog):
     )
     async def set_psn(
         self,
-        interaction: discord.Interaction,
-        psn_name: str
+        interaction: discord.Interaction
     ):
         """Update user bound psn id."""
-        # Create session
-        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-        async with async_session() as session:
-            try:
-                # Check if user is registered.
-                discord_user = await self.discord_builder.select_discord_user(
-                    session, str(interaction.user.id)
-                )
-                if discord_user is None:
-                    raise DiscordNotRegistered(
-                        "No account registered for this discord user."
-                    )
-
-                user = await self.user_builder.select_user_psn(
-                    session,
-                    psn_name
-                )
-                if user:
-                    print(user)
-                    print(user.id)
-                    if not user.id == discord_user.user_id:
-                        raise PsnIDAlreadyRegistered(
-                            "Psn ID already registered. Please use different Psn ID."
-                        )
-
-                if not await self.user_builder.update_user_psn(
-                    session,
-                    discord_user.user_id,
-                    psn_name
-                ):
-                    raise CoroutineFailed(
-                        "Could not update table."
-                    )
-
-                logging.info("%s: %s", interaction.user.id, "Token Reset")
-                await interaction.response.send_message(
-                    embed=discord.Embed(
-                        title="Psn ID Updated.",
-                        color=discord.Color.green()
-                    ),
-                    ephemeral=True
-                )
-
-                # Commit
-                await session.commit()
-
-            except (
-                DiscordNotRegistered,
-                PsnIDAlreadyRegistered
-            ) as e:
-                logging.warning("%s: %s", interaction.user.id, e)
-                await interaction.response.send_message(
-                    embed=discord.Embed(
-                        title="Psn ID update failed.",
-                        description=e,
-                        color=discord.Color.red()
-                    ),
-                    ephemeral=True
-                )
-
-            except (
-                CoroutineFailed
-            ) as e:
-                logging.error("%s: %s", interaction.user.id, e)
-                await interaction.response.send_message(
-                    embed=discord.Embed(
-                        title="Psn ID update failed.",
-                        description=e,
-                        color=discord.Color.red()
-                    ),
-                    ephemeral=True
-                )
-
-            finally:
-                # Close Session
-                await session.close()
+        await interaction.response.send_modal(
+            ModalPsn(self.user_builder, self.discord_builder)
+        )
 
     @set_psn.error
     async def on_account_token_reset_error(
