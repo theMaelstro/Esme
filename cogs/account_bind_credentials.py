@@ -131,6 +131,7 @@ class ModalBindCredentials(
     discord.ui.Modal,
     title='Bind Credentials'
 ):
+    """Discord Modal view class."""
     def __init__(
         self,
         user_builder: UserBuilder,
@@ -187,6 +188,7 @@ class AccountBindCredentials(BaseCog):
         self,
         interaction: discord.Interaction,
     ):
+        """Bind user account by using ingame credentials."""
         await interaction.response.send_modal(
             ModalBindCredentials(self.user_builder, self.discord_builder)
         )
