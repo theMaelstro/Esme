@@ -177,7 +177,7 @@ class AccountBindCredentials(BaseCog):
 
     @app_commands.command(
         name="account_bind_credentials",
-        description="Bind user account by ingame credentials."
+        description="Bind user account by ingame credentials. (Alternative to token)"
     )
     @app_commands.checks.cooldown(
         1,
