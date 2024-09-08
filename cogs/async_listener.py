@@ -81,7 +81,7 @@ class AsyncListener(BaseCog):
             # Start session
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
-                guild_application = await self.guild_builder.select_guild_application_by_id(
+                guild_application = await self.guild_builder.select_guild_application_detail_by_id(
                     session,
                     payload['id']
                 )
@@ -123,12 +123,12 @@ class AsyncListener(BaseCog):
                 # Actions
                 embed.add_field(
                     name="Accept",
-                    value=f"```application id:{payload['id']} accept```",
+                    value=f"```guild_application id:{payload['id']} decision:accept```",
                     inline=False
                 )
                 embed.add_field(
                     name="Decline",
-                    value=f"```application id:{payload['id']} decline```",
+                    value=f"```guild_application id:{payload['id']} decision:decline```",
                     inline=False
                 )
             # Application Creator

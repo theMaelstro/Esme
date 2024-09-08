@@ -1,10 +1,12 @@
 """Query Builder module for Guild related queries."""
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from sqlalchemy.orm import load_only
+from sqlalchemy.sql.expression import func
 
 from data.connector import CONN
 from data.mappings.erupe import (
     Guilds,
+    GuildApplications,
     GuildCharacters,
     Characters
 )
@@ -102,12 +104,23 @@ class GuildBuilder():
         rows = await self.db.select_objects(session, stmt)
         return rows
 
-    async def select_guild_application_by_id(self, session, application_id: int):
-        """Select guild application by id"""
+    async def select_guild_application_detail_by_id(self, session, application_id: int):
+        """Select guild application detail by id"""
         stmt = select(
             GuildApplicationsDetails
         ).where(
             GuildApplicationsDetails.id == application_id
+        )
+
+        rows = await self.db.select_object(session, stmt)
+        return rows
+
+    async def select_guild_application_by_id(self, session, application_id: int):
+        """Select guild application by id"""
+        stmt = select(
+            GuildApplications
+        ).where(
+            GuildApplications.id == application_id
         )
 
         rows = await self.db.select_object(session, stmt)
@@ -182,3 +195,44 @@ class GuildBuilder():
             discord_ids = await self.db.select_objects(session, stmt_discord_ids)
             return [discord.discord_id for discord in discord_ids]
         return None
+
+    async def insert_guild_member(
+        self,
+        session,
+        guild_id: int,
+        character_id: int
+    ):
+        """Insert guild member into guild table."""
+        stmt = (
+            select(
+                func.max(GuildCharacters.order_index)
+            ).where(
+                GuildCharacters.guild_id == guild_id
+            )
+        )
+        order_index = int(await self.db.select_object(session, stmt)) + 1
+        values = [
+            GuildCharacters(
+                guild_id=guild_id,
+                character_id=character_id,
+                avoid_leadership=False,
+                order_index=order_index,
+                recruiter=False
+            )
+        ]
+        await self.db.insert_objects(session, values)
+
+    async def delete_guild_application(
+        self,
+        session,
+        application_id: str
+    ):
+        """Delete guild application by id."""
+        stmt = (
+            delete(
+                GuildApplications
+            ).where(
+                GuildApplications.id == application_id
+            )
+        )
+        await self.db.execute_raw(session, stmt)

@@ -61,6 +61,7 @@ class Commands:
     account_set_psn: Command
     account_token_reset: Command
     character_select: Command
+    guild_application: Command
     guild_list: Command
     guild_members: Command
     guild_poogie: Command
@@ -114,6 +115,7 @@ class Config:
                 'account_set_psn': {"enabled": True, "cooldown": 60.0},
                 'account_token_reset': {"enabled": True, "cooldown": 60.0},
                 'character_select': {"enabled": True, "cooldown": 60.0},
+                'guild_application': {"enabled": True, "cooldown": 60.0},
                 'guild_list': {"enabled": True, "cooldown": 60.0},
                 'guild_members': {"enabled": True, "cooldown": 60.0},
                 'guild_poogie': {"enabled": True, "cooldown": 60.0},
@@ -195,6 +197,10 @@ class Config:
                 Command(
                     my_json['Commands']['character_select']['enabled'],
                     my_json['Commands']['character_select']['cooldown']
+                ),
+                Command(
+                    my_json['Commands']['guild_application']['enabled'],
+                    my_json['Commands']['guild_application']['cooldown']
                 ),
                 Command(
                     my_json['Commands']['guild_list']['enabled'],

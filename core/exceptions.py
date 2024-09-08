@@ -52,6 +52,9 @@ class MissingPermissions(Exception):
 class MissingArgument(Exception):
     """Missing required positional argument."""
 
+class InvalidArgument(Exception):
+    """Invalid positional argument."""
+
 class CoroutineFailed(Exception):
     """
     Coroutine returned False or None.

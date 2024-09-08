@@ -145,7 +145,7 @@ class AccountBindToken(BaseCog):
 
     @app_commands.command(
         name="account_bind_token",
-        description="Bind user account by using token. Use `!discord` in game to obtain user token. (Alternative to credentials)"
+        description="Bind user account by using token. Use `!discord` in game to obtain user token."
     )
     @app_commands.checks.cooldown(
         1,

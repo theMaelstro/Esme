@@ -68,9 +68,7 @@ class GuildList(BaseCog):
             await Pagination(interaction, get_page, public=False).navegate()
 
         except (
-            CoroutineFailed(
-                "Query did not yield valid results."
-            )
+            CoroutineFailed
         ) as e:
             logging.error("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
