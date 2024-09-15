@@ -41,8 +41,6 @@ async def m_set_psn(
                 psn_name
             )
             if user:
-                print(user)
-                print(user.id)
                 if not user.id == discord_user.user_id:
                     raise PsnIDAlreadyRegistered(
                         "Psn ID already registered. Please use different Psn ID."

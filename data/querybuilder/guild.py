@@ -80,9 +80,6 @@ class GuildBuilder():
         )
         return await self.db.update_objects(session, stmt)
 
-    # Guild Applications
-
-
     # Views
     async def select_guild_characters_by_guild_id(self, session, guild_id):
         """Select guild characters by their guild id"""
@@ -196,6 +193,7 @@ class GuildBuilder():
             return [discord.discord_id for discord in discord_ids]
         return None
 
+    # Guild Applications
     async def insert_guild_member(
         self,
         session,
