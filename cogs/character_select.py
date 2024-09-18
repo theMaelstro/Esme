@@ -44,7 +44,6 @@ class CharacterSelect(BaseCog):
         async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
         async with async_session() as session:
             try:
-            
                 # Check if user is registered.
                 discord_user = await self.discord_builder.select_discord_user(
                     session, str(interaction.user.id)
@@ -78,7 +77,17 @@ class CharacterSelect(BaseCog):
                         emb.add_field(
                             name = 'ID',
                             value = character.id,
-                            inline = False
+                            inline = True
+                        )
+                        emb.add_field(
+                            name = 'HR',
+                            value = character.hrp,
+                            inline = True
+                        )
+                        emb.add_field(
+                            name = 'GR',
+                            value = character.gr,
+                            inline = True
                         )
                         emb.add_field(
                             name = 'LAST LOGIN',

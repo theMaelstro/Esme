@@ -58,6 +58,7 @@ class Commands:
     """Class representing config commands settings."""
     account_bind_credentials: Command
     account_bind_token: Command
+    account_card: Command
     account_set_psn: Command
     account_token_reset: Command
     character_select: Command
@@ -112,6 +113,7 @@ class Config:
             'Commands': {
                 'account_bind_credentials': {"enabled": True, "cooldown": 60.0},
                 'account_bind_token': {"enabled": True, "cooldown": 60.0},
+                'account_card': {"enabled": True, "cooldown": 60.0},
                 'account_set_psn': {"enabled": True, "cooldown": 60.0},
                 'account_token_reset': {"enabled": True, "cooldown": 60.0},
                 'character_select': {"enabled": True, "cooldown": 60.0},
@@ -185,6 +187,10 @@ class Config:
                 Command(
                     my_json['Commands']['account_bind_token']['enabled'],
                     my_json['Commands']['account_bind_token']['cooldown']
+                ),
+                Command(
+                    my_json['Commands']['account_card']['enabled'],
+                    my_json['Commands']['account_card']['cooldown']
                 ),
                 Command(
                     my_json['Commands']['account_set_psn']['enabled'],
