@@ -14,11 +14,13 @@ class GuildApplicationsDetails(Base):
     CREATE OR REPLACE VIEW guild_applications_details AS
     SELECT 
         guild_applications.id,
+        guilds.id as guild_id,
         guilds.name as guild_name,
         t1.name as initiate_name,
         guild_applications.actor_id,
         t2.name as creator_name,
-        round(date_part('epoch'::text, guild_applications.created_at)) AS applied_on
+        round(date_part('epoch'::text, guild_applications.created_at)) AS applied_on,
+        guild_applications.application_type as type
     FROM 
         guild_applications
     LEFT JOIN 
@@ -32,7 +34,9 @@ class GuildApplicationsDetails(Base):
     """
     __tablename__ = "guild_applications_details"
     id: Mapped[int] = mapped_column(primary_key=True)
+    guild_id: Mapped[int]
     guild_name: Mapped[str] = mapped_column(VARCHAR(24))
     initiate_name: Mapped[str] = mapped_column(VARCHAR(15))
     creator_name: Mapped[str] = mapped_column(VARCHAR(15))
     applied_on: Mapped[float]
+    type: Mapped[str] = mapped_column(VARCHAR(15))

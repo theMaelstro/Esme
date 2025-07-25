@@ -117,8 +117,8 @@ class ModalTokenReset(
         placeholder='Type in your username...',
     )
     password = discord.ui.TextInput(
-        label='Password (encrypted in the process)',
-        placeholder='Type in your password...',
+        label='Game Password (encrypted in the process)',
+        placeholder='Type in your game password...',
     )
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -140,23 +140,13 @@ class ModalTokenReset(
             ephemeral=True
         )
 
-class AccountTokenReset(BaseCog):
+class TokenReset():
     """Cog handling token reset with credentials."""
-    def __init__(self, client: commands.Bot):
-        self.client = client
+    def __init__(self):
         self.user_builder = UserBuilder()
         self.discord_builder = DiscordBuilder()
 
-    @app_commands.command(
-        name="account_token_reset",
-        description="Reset account token. To generate new token use `!discord` command in game."
-    )
-    @app_commands.checks.cooldown(
-        1,
-        CONFIG.commands.account_token_reset.cooldown,
-        key=lambda i: (i.guild_id, i.user.id)
-    )
-    async def account_token_reset(
+    async def token_reset(
         self,
         interaction: discord.Interaction
     ):
@@ -164,17 +154,3 @@ class AccountTokenReset(BaseCog):
         await interaction.response.send_modal(
             ModalTokenReset(self.user_builder, self.discord_builder)
         )
-
-    @account_token_reset.error
-    async def on_account_token_reset_error(
-        self,
-        interaction: discord.Interaction,
-        error: app_commands.AppCommandError
-    ):
-        """On cooldown send remaining time info message."""
-        await self.on_cooldown_response(interaction, error)
-
-async def setup(client:commands.Bot) -> None:
-    """Initialize cog."""
-    if CONFIG.commands.account_token_reset.enabled:
-        await client.add_cog(AccountTokenReset(client))

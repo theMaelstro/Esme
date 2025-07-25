@@ -101,6 +101,26 @@ class GuildBuilder():
         rows = await self.db.select_objects(session, stmt)
         return rows
 
+    async def select_guild_character_by_character_id(self, session, character_id):
+        """Select guild characters by their guild id"""
+        stmt = select(
+            GuildCharactersByGuildId
+        ).options(
+            load_only(
+                GuildCharactersByGuildId.character_id,
+                GuildCharactersByGuildId.guild_id,
+                GuildCharactersByGuildId.order_index
+            )
+
+        ).where(
+            GuildCharactersByGuildId.character_id == character_id
+        ).order_by(
+            GuildCharactersByGuildId.order_index
+        )
+
+        rows = await self.db.select_object(session, stmt)
+        return rows
+
     async def select_guild_application_detail_by_id(self, session, application_id: int):
         """Select guild application detail by id"""
         stmt = select(
@@ -110,6 +130,19 @@ class GuildBuilder():
         )
 
         rows = await self.db.select_object(session, stmt)
+        return rows
+
+    async def select_guild_applications_detail_by_guild_id(self, session, guild_id: int):
+        """Select guild application detail by id"""
+        stmt = select(
+            GuildApplicationsDetails
+        ).where(
+            GuildApplicationsDetails.guild_id == guild_id
+        ).order_by(
+            GuildApplicationsDetails.applied_on
+        ).limit(25)
+
+        rows = await self.db.select_objects(session, stmt)
         return rows
 
     async def select_guild_application_by_id(self, session, application_id: int):

@@ -18,25 +18,15 @@ from core.exceptions import (
 )
 from core import BaseCog
 
-class AccountCard(BaseCog):
+class Card(BaseCog):
     """
     Cog handling active character card.
     """
-    def __init__(self, client: commands.Bot):
-        self.client = client
+    def __init__(self):
         self.characters_builder = CharactersBuilder()
         self.discord_builder = DiscordBuilder()
 
-    @app_commands.command(
-        name="card",
-        description="Show active character card."
-    )
-    @app_commands.checks.cooldown(
-        1,
-        CONFIG.commands.account_card.cooldown,
-        key=lambda i: (i.guild_id, i.user.id)
-    )
-    async def account_card(self, interaction: discord.Interaction):
+    async def card(self, interaction: discord.Interaction, member: discord.Member):
         """Select active character."""
         # Create session
         async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
@@ -44,7 +34,7 @@ class AccountCard(BaseCog):
             try:
                 # Check if user is registered.
                 discord_user = await self.discord_builder.select_discord_user(
-                    session, str(interaction.user.id)
+                    session, str(interaction.user.id) if not member else str(member.id)
                 )
                 if discord_user is None:
                     raise DiscordNotRegistered(
@@ -137,17 +127,3 @@ class AccountCard(BaseCog):
                     ),
                     ephemeral=True
                 )
-
-    @account_card.error
-    async def on_account_card_error(
-        self,
-        interaction: discord.Interaction,
-        error: app_commands.AppCommandError
-    ):
-        """On cooldown send remaining time info message."""
-        await self.on_cooldown_response(interaction, error)
-
-async def setup(client:commands.Bot) -> None:
-    """Initialize cog."""
-    if CONFIG.commands.character_select.enabled:
-        await client.add_cog(AccountCard(client))

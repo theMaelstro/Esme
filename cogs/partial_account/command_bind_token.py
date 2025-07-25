@@ -1,4 +1,4 @@
-"""Extension module for AccountBindCredentials Cog."""
+"""Extension module for AccountBindToken Cog."""
 import logging
 
 import discord
@@ -11,48 +11,34 @@ from data.connector import CONN
 from data import UserBuilder, DiscordBuilder
 from core.exceptions import (
     CoroutineFailed,
-    UsernameIncorrect,
-    UnmatchingPasswords
+    TokenInvalid
 )
 from core import BaseCog
-from core.crypto import check_password
 
-async def m_bind_credentials(
-        interaction: discord.Interaction,
-        user_builder: UserBuilder,
-        discord_builder: DiscordBuilder,
-        username: str,
-        password: str
-    ):
-    """Bind user account by using ingame credentials."""
+async def m_bind_token(
+    interaction: discord.Interaction,
+    user_builder: UserBuilder,
+    discord_builder: DiscordBuilder,
+    discord_token: str
+):
+    """Bind user account by using token."""
     # Create session
     async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
     async with async_session() as session:
         try:
-            # Get user info.
-            user = await user_builder.select_user_by_username(
-                session,
-                username
-            )
-            if user is None:
-                raise UsernameIncorrect(
-                    'Username is incorrect.'
-                )
+            discord_id = await discord_builder.check_id(session, str(interaction.user.id))
 
-            if await check_password(password, user.password) is False:
-                raise UnmatchingPasswords(
-                    'Passwords do not match.'
-                )
+            user_id = await user_builder.select_id_by_token(session, discord_token)
+            if user_id is None:
+                raise TokenInvalid(
+                        "User token is invalid."
+                    )
 
-            discord_id = await discord_builder.check_id(
-                session,
-                str(interaction.user.id)
-            )
             if discord_id is not None:
-                # Update User
+                # Update User.
                 if not await discord_builder.bind_user_old(
                     session,
-                    user.id,
+                    user_id,
                     str(interaction.user.id)
                 ):
                     raise CoroutineFailed(
@@ -68,10 +54,9 @@ async def m_bind_credentials(
                     ephemeral=True
                 )
             else:
-                # Register User
                 await discord_builder.bind_user_new(
                     session,
-                    user.id,
+                    user_id,
                     str(interaction.user.id)
                 )
                 logging.info("%s: %s", interaction.user.id, "Account Registered")
@@ -82,12 +67,11 @@ async def m_bind_credentials(
                     ),
                     ephemeral=True
                 )
+
             # Commit
             await session.commit()
-
         except (
-            UsernameIncorrect,
-            UnmatchingPasswords
+            TokenInvalid
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
@@ -112,50 +96,34 @@ async def m_bind_credentials(
                 ephemeral=True
             )
 
-        except Exception as e:
-            logging.error("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Binding Failed",
-                    description="Unhandled exception.",
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
-
         finally:
             # Close Session
             await session.close()
 
-class ModalBindCredentials(
+class ModalBindToken(
     discord.ui.Modal,
-    title='Bind Credentials'
+    title='Bind Token'
 ):
     """Discord Modal view class."""
     def __init__(
         self,
         user_builder: UserBuilder,
-        discord_builder: DiscordBuilder
+        discord_builder: DiscordBuilder,
     ):
         super().__init__()
         self.user_builder = user_builder
         self.discord_builder = discord_builder
-    username = discord.ui.TextInput(
-        label='Username',
-        placeholder='Type in your username...',
-    )
-    password = discord.ui.TextInput(
-        label='Password (encrypted in the process)',
-        placeholder='Type in your password...',
+    token = discord.ui.TextInput(
+        label='Token',
+        placeholder='Type in your token...',
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        await m_bind_credentials(
+        await m_bind_token(
             interaction,
             self.user_builder,
             self.discord_builder,
-            self.username.value,
-            self.password.value
+            self.token.value
         )
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
@@ -168,41 +136,14 @@ class ModalBindCredentials(
             ephemeral=True
         )
 
-class AccountBindCredentials(BaseCog):
-    """Cog handling binding account with credentials."""
-    def __init__(self, client: commands.Bot):
-        self.client = client
+class BindToken():
+    """Cog handling binding account with token."""
+    def __init__(self):
         self.user_builder = UserBuilder()
         self.discord_builder = DiscordBuilder()
 
-    @app_commands.command(
-        name="account_bind_credentials",
-        description="Bind user account by ingame credentials."
-    )
-    @app_commands.checks.cooldown(
-        1,
-        CONFIG.commands.account_bind_credentials.cooldown,
-        key=lambda i: (i.guild_id, i.user.id)
-    )
-    async def account_bind_credentials(
-        self,
-        interaction: discord.Interaction,
-    ):
-        """Bind user account by using ingame credentials."""
+    async def bind_token(self, interaction: discord.Interaction):
+        """Bind user account by using token."""
         await interaction.response.send_modal(
-            ModalBindCredentials(self.user_builder, self.discord_builder)
+            ModalBindToken(self.user_builder, self.discord_builder)
         )
-
-    @account_bind_credentials.error
-    async def on_account_bind_credentials_error(
-        self,
-        interaction: discord.Interaction,
-        error: app_commands.AppCommandError
-    ):
-        """On cooldown send remaining time info message."""
-        await self.on_cooldown_response(interaction, error)
-
-async def setup(client:commands.Bot) -> None:
-    """Initialize cog."""
-    if CONFIG.commands.account_bind_credentials.enabled:
-        await client.add_cog(AccountBindCredentials(client))

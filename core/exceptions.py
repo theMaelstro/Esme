@@ -63,3 +63,9 @@ class CoroutineFailed(Exception):
 
 class SettingNotConfigured(Exception):
     """Setting not configured in json file."""
+
+class CharacterNotInGuild(Exception):
+    """Character is not a Guild member."""
+
+class MissingGuildApplications(Exception):
+    """No Guild Applications found."""

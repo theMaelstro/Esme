@@ -134,23 +134,13 @@ class ModalPsn(
             ephemeral=True
         )
 
-class SetPsn(BaseCog):
+class PsnSet():
     """Cog handling setting and updating user psn id."""
-    def __init__(self, client: commands.Bot):
-        self.client = client
+    def __init__(self):
         self.user_builder = UserBuilder()
         self.discord_builder = DiscordBuilder()
 
-    @app_commands.command(
-        name="account_set_psn",
-        description="Set or update psn id bound to account."
-    )
-    @app_commands.checks.cooldown(
-        1,
-        CONFIG.commands.account_set_psn.cooldown,
-        key=lambda i: (i.guild_id, i.user.id)
-    )
-    async def set_psn(
+    async def psn_set(
         self,
         interaction: discord.Interaction
     ):
@@ -158,17 +148,3 @@ class SetPsn(BaseCog):
         await interaction.response.send_modal(
             ModalPsn(self.user_builder, self.discord_builder)
         )
-
-    @set_psn.error
-    async def on_account_token_reset_error(
-        self,
-        interaction: discord.Interaction,
-        error: app_commands.AppCommandError
-    ):
-        """On cooldown send remaining time info message."""
-        await self.on_cooldown_response(interaction, error)
-
-async def setup(client:commands.Bot) -> None:
-    """Initialize cog."""
-    if CONFIG.commands.account_set_psn.enabled:
-        await client.add_cog(SetPsn(client))
