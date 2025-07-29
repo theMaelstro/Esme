@@ -9,8 +9,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from settings import CONFIG
 from data.connector import CONN
-from data import CharactersBuilder
-from data import DiscordBuilder
+from data import (
+    DiscordBuilder,
+    GuildBuilder
+)
 from core import get_weapon_type_image_url
 from core.exceptions import (
     CoroutineFailed,
@@ -18,12 +20,16 @@ from core.exceptions import (
 )
 from core import BaseCog
 
+from data.mappings.custom.views import (
+    GuildCharactersByGuildId
+)
+
 class Card(BaseCog):
     """
     Cog handling active character card.
     """
     def __init__(self):
-        self.characters_builder = CharactersBuilder()
+        self.guild_builder = GuildBuilder()
         self.discord_builder = DiscordBuilder()
 
     async def card(self, interaction: discord.Interaction, member: discord.Member):
@@ -42,7 +48,7 @@ class Card(BaseCog):
                     )
 
                 # Get character list.
-                character = await self.characters_builder.select_character_by_id(
+                character = await self.guild_builder.select_guild_character_details_by_character_id(
                     session,
                     discord_user.user_id
                 )
@@ -53,7 +59,7 @@ class Card(BaseCog):
 
                 # Prepare embed
                 embed=discord.Embed(
-                    title=re.escape(character.name),
+                    title=re.escape(character.character_name),
                     color=discord.Color.blue()
                 )
                 embed.add_field(
@@ -63,7 +69,7 @@ class Card(BaseCog):
                 )
                 embed.add_field(
                     name = 'HR',
-                    value = character.hrp,
+                    value = character.hr,
                     inline = True
                 )
                 embed.add_field(
@@ -73,7 +79,7 @@ class Card(BaseCog):
                 )
                 embed.add_field(
                     name = 'LAST LOGIN',
-                    value = f"<t:{round(character.last_login)}:f>",
+                    value = f"<t:{character.last_login}:f>",
                     inline = False
                 )
                 embed.add_field(

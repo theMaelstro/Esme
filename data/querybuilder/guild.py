@@ -87,7 +87,7 @@ class GuildBuilder():
             GuildCharactersByGuildId
         ).options(
             load_only(
-                GuildCharactersByGuildId.name,
+                GuildCharactersByGuildId.character_name,
                 GuildCharactersByGuildId.joined_at_epoch,
                 GuildCharactersByGuildId.order_index
             )
@@ -112,6 +112,19 @@ class GuildBuilder():
                 GuildCharactersByGuildId.order_index
             )
 
+        ).where(
+            GuildCharactersByGuildId.character_id == character_id
+        ).order_by(
+            GuildCharactersByGuildId.order_index
+        )
+
+        rows = await self.db.select_object(session, stmt)
+        return rows
+
+    async def select_guild_character_details_by_character_id(self, session, character_id):
+        """Select guild characters details by their guild id"""
+        stmt = select(
+            GuildCharactersByGuildId
         ).where(
             GuildCharactersByGuildId.character_id == character_id
         ).order_by(

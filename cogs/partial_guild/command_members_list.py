@@ -109,7 +109,7 @@ class MembersList():
                     )
                     emb.add_field(
                         name="",
-                        value=f"<t:{round(member.joined_at_epoch)}:f>",
+                        value=f"<t:{member.joined_at_epoch}:f>",
                         inline=True
                     )
                 emb.set_author(

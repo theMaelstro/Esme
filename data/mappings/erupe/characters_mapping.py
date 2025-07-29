@@ -22,7 +22,7 @@ class Characters(Base):
     name: Mapped[str] = mapped_column(VARCHAR(15))
     unk_desc_string: Mapped[str] = mapped_column(VARCHAR(31))
     gr: Mapped[int] = mapped_column(nullable=True)
-    hrp: Mapped[int] = mapped_column(nullable=True)
+    hr: Mapped[int] = mapped_column(nullable=True)
     weapon_type: Mapped[int] = mapped_column(nullable=True)
     last_login: Mapped[int] = mapped_column(nullable=True)
     savedata: Mapped[bytes] = mapped_column(BYTEA, nullable=True)
@@ -58,7 +58,7 @@ class Characters(Base):
     cafe_reset: Mapped[datetime.datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now()) # pylint: disable=[not-callable]
     bonus_quests: Mapped[int]
     daily_quests: Mapped[int]
-    promo_points: Mapped[int] 
+    promo_points: Mapped[int]
     rasta_id: Mapped[int] = mapped_column(nullable=True)
     pact_id: Mapped[int] = mapped_column(nullable=True)
     stampcard: Mapped[int]

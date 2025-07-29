@@ -81,7 +81,7 @@ class CharacterSelect(BaseCog):
                         )
                         emb.add_field(
                             name = 'HR',
-                            value = character.hrp,
+                            value = character.hr,
                             inline = True
                         )
                         emb.add_field(
