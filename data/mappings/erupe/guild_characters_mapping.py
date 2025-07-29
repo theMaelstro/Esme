@@ -24,7 +24,6 @@ class GuildCharacters(Base):
     avoid_leadership: Mapped[bool]
     order_index: Mapped[int]
     recruiter: Mapped[bool]
-    souls: Mapped[int]
     rp_today: Mapped[int]
     rp_yesterday: Mapped[int]
     tower_mission_1: Mapped[int]

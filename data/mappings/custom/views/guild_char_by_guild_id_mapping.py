@@ -31,7 +31,6 @@ class GuildCharactersByGuildId(Base):
         characters.last_login,
         ROUND(date_part('epoch'::text, characters.daily_time)) as daily_time,
         guild_characters.order_index,
-		souls,
         rp_today,
         rp_yesterday,
         ROUND(date_part('epoch'::text, guild_characters.joined_at)) AS joined_at_epoch
