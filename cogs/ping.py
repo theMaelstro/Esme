@@ -29,7 +29,7 @@ class Ping(BaseCog):
             embed=discord.Embed(
                 title="Pong!",
                 description=(
-                    "# [Pong](https://tenor.com/view/asby-vtuber-streamer-steering-wheel-swerving-gif-27623108)\n"
+                    "# Pong"
                     f"{interaction.user.mention}"
                 ),
                 color=discord.Color.green()

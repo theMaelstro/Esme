@@ -47,7 +47,6 @@ class AsyncListener(BaseCog):
                     ),
                     color=discord.Color.green()
                 )
-            embed.set_image(url="https://media1.tenor.com/m/dCKRbYgimZsAAAAd/asby-vtuber.gif")
             await channel.send(embed=embed)
 
         except (
