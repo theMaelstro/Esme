@@ -17,7 +17,10 @@ from core.exceptions import (
     SettingNotConfigured
 )
 from data.connector import CONN
-from data import GuildBuilder
+from data import (
+    GuildBuilder,
+    UniversalBuilder
+)
 from settings import CONFIG
 
 class AsyncListener(BaseCog):
@@ -25,6 +28,7 @@ class AsyncListener(BaseCog):
     def __init__(self, client: commands.Bot):
         self.client = client
         self.guild_builder = GuildBuilder()
+        self.universal_builder = UniversalBuilder()
         self.listener_tasks = {}
 
     async def on_notification_discord(
@@ -266,6 +270,42 @@ class AsyncListener(BaseCog):
         ) as e:
             logging.error("Unhandled exception: %s", e)
 
+    async def on_notification_servers(
+        self,
+        notification: asyncpg_listen.NotificationOrTimeout
+    ) -> None:
+        """Example handler for notification."""
+        logging.info("Notification received: %s", notification)
+        try:
+            channel = self.client.get_channel(CONFIG.discord.logs_channel_id)
+            if not channel:
+                raise SettingNotConfigured(
+                    "Logs channel not configured."
+                )
+            # Start session
+            async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+            async with async_session() as session:
+                players_count = await self.universal_builder.get_players_online(
+                    session
+                )
+                await session.close()
+
+            await self.client.change_presence(
+                activity=discord.CustomActivity(
+                    name = f"𝗣𝗹𝗮𝘆𝗲𝗿𝘀 𝗢𝗻𝗹𝗶𝗻𝗲: {players_count}",
+                )
+            )
+
+        except (
+            SettingNotConfigured
+        ) as e:
+            logging.warning("Config: %s", e)
+
+        except (
+            Exception
+        ) as e:
+            logging.error("Unhandled exception: %s", e)
+
     async def start_listeners(self) -> dict:
         """Prepare and start listener tasks."""
         # Start session
@@ -307,6 +347,17 @@ class AsyncListener(BaseCog):
                 text("""CREATE OR REPLACE TRIGGER events_notify_trigger
                 AFTER INSERT ON events
                 FOR EACH ROW EXECUTE PROCEDURE notify_new_events();"""),
+
+                # Servers
+                text("""CREATE OR REPLACE FUNCTION notify_new_servers() RETURNS trigger AS $$
+                BEGIN
+                PERFORM pg_notify('servers_notification', row_to_json(NEW)::text);
+                RETURN NEW;
+                END;"""
+                "$$ LANGUAGE plpgsql;"""),
+                text("""CREATE OR REPLACE TRIGGER servers_notify_trigger
+                AFTER UPDATE ON servers
+                FOR EACH ROW EXECUTE PROCEDURE notify_new_servers();"""),
 
                 text("COMMIT;")
             ]
@@ -353,6 +404,14 @@ class AsyncListener(BaseCog):
                 listeners["event"] = asyncio.create_task(
                      listener.run(
                          {"events_notification": self.on_notification_events},
+                         policy=asyncpg_listen.ListenPolicy.ALL,
+                         notification_timeout=-1
+                     )
+                 )
+            if CONFIG.features.listeners.players_count.enabled:
+                listeners["servers"] = asyncio.create_task(
+                     listener.run(
+                         {"servers_notification": self.on_notification_servers},
                          policy=asyncpg_listen.ListenPolicy.ALL,
                          notification_timeout=-1
                      )

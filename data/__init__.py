@@ -4,5 +4,6 @@ from .querybuilder import (
     CharactersBuilder,
     DiscordBuilder,
     GuildBuilder,
-    UserBuilder
+    UserBuilder,
+    UniversalBuilder
 )

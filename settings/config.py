@@ -25,6 +25,7 @@ class Listeners:
     discord: Listener
     guild_applications: Listener
     events: Listener
+    players_count: Listener
 
 @dataclasses.dataclass
 class General:
@@ -129,7 +130,8 @@ class Config:
                 'Listeners': {
                     'discord': False,
                     'guild_applications': True,
-                    'events': True
+                    'events': True,
+                    'players_count': True
                 }
             }
         }
@@ -244,6 +246,9 @@ class Config:
                     ),
                     Listener(
                         my_json['Features']['Listeners']['events']
+                    ),
+                    Listener(
+                        my_json['Features']['Listeners']['players_count']
                     )
                 )
             )
