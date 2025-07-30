@@ -277,11 +277,6 @@ class AsyncListener(BaseCog):
         """Example handler for notification."""
         logging.info("Notification received: %s", notification)
         try:
-            channel = self.client.get_channel(CONFIG.discord.logs_channel_id)
-            if not channel:
-                raise SettingNotConfigured(
-                    "Logs channel not configured."
-                )
             # Start session
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
@@ -290,6 +285,7 @@ class AsyncListener(BaseCog):
                 )
                 await session.close()
 
+            logging.info("Updating bot status: %s", players_count)
             await self.client.change_presence(
                 activity=discord.CustomActivity(
                     name = f"𝗣𝗹𝗮𝘆𝗲𝗿𝘀 𝗢𝗻𝗹𝗶𝗻𝗲: {players_count}",

@@ -37,12 +37,12 @@ class General:
 class Discord:
     """Class representing config discord settings."""
     token: str
-    server_id: str
     # TODO: More complex administration permissions with access levels
     # where 0 = admin
     admin_user_ids: list
     guild_id: str
     guild_channel_id: str
+    status_category_id: str
     logs_channel_id: str
 
 @dataclasses.dataclass
@@ -98,10 +98,10 @@ class Config:
             },
             'Discord': {
                 'token': None,
-                'server_id': None,
                 'admin_user_ids': [],
                 'guild_id': None,
                 'guild_channel_id': None,
+                'status_category_id': None,
                 'logs_channel_id': None
             },
             "Database": {
@@ -166,10 +166,10 @@ class Config:
 
             self.discord = Discord(
                 my_json['Discord']['token'],
-                my_json['Discord']['server_id'],
                 my_json['Discord']['admin_user_ids'],
                 my_json['Discord']['guild_id'],
                 my_json['Discord']['guild_channel_id'],
+                my_json['Discord']['status_category_id'],
                 my_json['Discord']['logs_channel_id']
             )
 
