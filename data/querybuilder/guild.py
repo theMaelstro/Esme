@@ -1,5 +1,11 @@
 """Query Builder module for Guild related queries."""
-from sqlalchemy import select, update, delete
+from sqlalchemy import (
+    select,
+    update,
+    delete,
+    and_,
+    or_
+)
 from sqlalchemy.orm import load_only
 from sqlalchemy.sql.expression import func
 
@@ -193,16 +199,18 @@ class GuildBuilder():
                 load_only(GuildCharacters.character_id)
             )
             .where(
-                GuildCharacters.recruiter is True
-            )
-            .where(
-                GuildCharacters.guild_id == guild_id
+                and_(
+                    GuildCharacters.recruiter == True, # pylint: disable=[singleton-comparison] not supported by SQLAlchemy
+                    GuildCharacters.guild_id == guild_id
+                )
             )
         )
 
         character_id_leader = await self.db.select_objects(session, stmt_leader)
+        print("sqtest query")
         character_id_recruiters = await self.db.select_objects(session, stmt_recruiters)
 
+        print("sqtest", character_id_recruiters)
         character_ids = []
         if character_id_leader is not None:
             for character in character_id_leader:
@@ -210,11 +218,11 @@ class GuildBuilder():
 
         if character_id_recruiters is not None:
             for character in character_id_recruiters:
+                print("sqtest", character)
                 character_ids.append(character.character_id)
 
         if len(character_ids) == 0:
             return None
-
         stmt_users = (
             select(Characters)
             .options(

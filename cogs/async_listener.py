@@ -125,15 +125,21 @@ class AsyncListener(BaseCog):
                     )
                 # Actions
                 embed.add_field(
-                    name="Accept",
-                    value=f"```guild_application id:{payload['id']} decision:accept```",
+                    name="Check Inbox",
+                    value="```/guild application list```",
                     inline=False
                 )
                 embed.add_field(
-                    name="Decline",
-                    value=f"```guild_application id:{payload['id']} decision:decline```",
+                    name="Accept",
+                    value=f"```/guild application accept id:{payload['id']}```",
                     inline=False
                 )
+                embed.add_field(
+                    name="Reject",
+                    value=f"```/guild application reject id:{payload['id']}```",
+                    inline=False
+                )
+
             # Application Creator
             embed.set_footer(
                 text=f"Requested by {re.escape(guild_application.creator_name)}"

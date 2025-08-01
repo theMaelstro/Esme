@@ -112,19 +112,19 @@ class Config:
                 "database": "erupe"
             },
             'Commands': {
-                'account_bind_credentials': {"enabled": True, "cooldown": 60.0},
-                'account_bind_token': {"enabled": True, "cooldown": 60.0},
-                'account_card': {"enabled": True, "cooldown": 60.0},
-                'account_set_psn': {"enabled": True, "cooldown": 60.0},
-                'account_token_reset': {"enabled": True, "cooldown": 60.0},
-                'character_select': {"enabled": True, "cooldown": 60.0},
-                'guild_application': {"enabled": True, "cooldown": 60.0},
-                'guild_list': {"enabled": True, "cooldown": 60.0},
-                'guild_members': {"enabled": True, "cooldown": 60.0},
-                'guild_poogie': {"enabled": True, "cooldown": 60.0},
-                'guild_set_leader': {"enabled": True, "cooldown": 60.0},
-                'ping': {"enabled": True, "cooldown": 60.0},
-                'road_check': {"enabled": True, "cooldown": 60.0}
+                'account_bind_credentials': {"enabled": True, "cooldown": 0.0},
+                'account_bind_token': {"enabled": True, "cooldown": 0.0},
+                'account_card': {"enabled": True, "cooldown": 0.0},
+                'account_set_psn': {"enabled": True, "cooldown": 0.0},
+                'account_token_reset': {"enabled": True, "cooldown": 0.0},
+                'character_select': {"enabled": True, "cooldown": 0.0},
+                'guild_application': {"enabled": True, "cooldown": 0.0},
+                'guild_list': {"enabled": True, "cooldown": 0.0},
+                'guild_members': {"enabled": True, "cooldown": 0.0},
+                'guild_poogie': {"enabled": True, "cooldown": 0.0},
+                'guild_set_leader': {"enabled": True, "cooldown": 0.0},
+                'ping': {"enabled": True, "cooldown": 0.0},
+                'road_check': {"enabled": True, "cooldown": 0.0}
             },
             'Features': {
                 'Listeners': {

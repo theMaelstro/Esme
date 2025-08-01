@@ -1,3 +1,4 @@
 """Initialize application partial."""
-from .command_applications_list import ApplicationsList
+from .command_application_list import ApplicationList
+from .command_application_resolve import ApplicationResolve
 from .command_members_list import MembersList

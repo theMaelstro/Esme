@@ -55,7 +55,16 @@ class DynamicApplicationView(discord.ui.View):
             # Start session
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
-                guild_application = await self.guild_builder.select_guild_application_by_id(session, self.application_id)
+                guild_application = await self.guild_builder.select_guild_application_by_id(
+                    session,
+                    self.application_id
+                )
+                if not guild_application:
+                    raise(
+                        CoroutineFailed(
+                            "Applictaion does not exist."
+                        )
+                    )
                 await self.guild_builder.insert_guild_member(
                     session,
                     guild_application.guild_id,
@@ -182,7 +191,7 @@ class DynamicSelectView(discord.ui.View):
             view=None
         )
 
-class ApplicationsList():
+class ApplicationList():
     """Holder for application list command."""
     def __init__(self):
         self.discord_builder = DiscordBuilder()
@@ -215,7 +224,12 @@ class ApplicationsList():
                         "Character is not a Guild member."
                     )
 
-                if guild_character.order_index > 2:
+                discord_ids = await self.guild_builder.select_recruiter_discord_ids(
+                    session,
+                    guild_character.guild_id
+                )
+                print("sqtest: command: ", discord_ids, guild_character, guild_character.guild_id)
+                if str(interaction.user.id) not in discord_ids:
                     raise MissingPermissions(
                         "You are not elevated guild member."
                     )
