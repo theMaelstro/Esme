@@ -15,17 +15,21 @@ class Command:
     cooldown: float
 
 @dataclasses.dataclass
-class Listener:
-    """Class representing single config listener settings."""
+class Toggle:
+    """Class representing single config toggle settings."""
     enabled: bool
 
 @dataclasses.dataclass
 class Listeners:
     """Class representing config listeners settings."""
-    discord: Listener
-    guild_applications: Listener
-    events: Listener
-    players_count: Listener
+    discord: Toggle
+    guild_applications: Toggle
+    events: Toggle
+
+@dataclasses.dataclass
+class Tasks:
+    """Class representing config tasks settings."""
+    players_count: Toggle
 
 @dataclasses.dataclass
 class General:
@@ -75,6 +79,7 @@ class Commands:
 class Features:
     """Class representing config features settings."""
     listeners: Listeners
+    tasks: Tasks
 
 class Config:
     """Config class object."""
@@ -129,9 +134,11 @@ class Config:
             'Features': {
                 'Listeners': {
                     'discord': False,
-                    'guild_applications': True,
-                    'events': True,
-                    'players_count': True
+                    'guild_applications': False,
+                    'events': False
+                },
+                'Tasks': {
+                    'players_count': False
                 }
             }
         }
@@ -238,17 +245,19 @@ class Config:
 
             self.features = Features(
                 Listeners(
-                    Listener(
+                    Toggle(
                         my_json['Features']['Listeners']['discord']
                     ),
-                    Listener(
+                    Toggle(
                         my_json['Features']['Listeners']['guild_applications']
                     ),
-                    Listener(
+                    Toggle(
                         my_json['Features']['Listeners']['events']
-                    ),
-                    Listener(
-                        my_json['Features']['Listeners']['players_count']
+                    )
+                ),
+                Tasks(
+                    Toggle(
+                        my_json['Features']['Tasks']['players_count']
                     )
                 )
             )

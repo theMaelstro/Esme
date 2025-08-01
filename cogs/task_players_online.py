@@ -19,7 +19,8 @@ async def update_status_channel(channels: list[discord.VoiceChannel], channel_na
     for channel in channels:
         if channel.name.split(":")[0] == channel_name:
             await channel.edit(name=f"{channel_name}: {players}")
-            break
+            return
+    return
 
 class PlayersOnlineTask(BaseCog):
     """Cog handling calculation of key flag."""
@@ -48,12 +49,25 @@ class PlayersOnlineTask(BaseCog):
             id=CONFIG.discord.status_category_id
         )
 
+        players_sum = 0
         for server in players_list:
+            players_sum += server.current_players
+            logging.info(
+                "Updating Status channel: %s",
+                f"{server.world_name} {server.land}: {server.current_players}"
+            )
             await update_status_channel(
                 category.channels,
                 f"{server.world_name} {server.land}",
                 server.current_players
             )
+
+        logging.info("Updating bot status: %s", players_sum)
+        await self.client.change_presence(
+            activity=discord.CustomActivity(
+                name = f"𝗣𝗹𝗮𝘆𝗲𝗿𝘀 𝗢𝗻𝗹𝗶𝗻𝗲: {players_sum}",
+            )
+        )
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -114,5 +128,5 @@ class PlayersOnlineTask(BaseCog):
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
-    if CONFIG.features.listeners.players_count.enabled:
+    if CONFIG.features.tasks.players_count.enabled:
         await client.add_cog(PlayersOnlineTask(client))
