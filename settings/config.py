@@ -47,7 +47,17 @@ class Discord:
     guild_id: str
     guild_channel_id: str
     status_category_id: str
+    live_chat_category_id: str
     logs_channel_id: str
+
+@dataclasses.dataclass
+class LiveChat:
+    """Class representing config live chat settings"""
+    chat_task: Toggle
+    listen_port: int
+    remote_port: int
+    max_lines: int
+    api_key: str
 
 @dataclasses.dataclass
 class Database:
@@ -87,6 +97,7 @@ class Config:
         self.config = configparser.ConfigParser()
         self.general: General
         self.discord: Discord
+        self.livechat: LiveChat
         self.database: Database
         self.commands: Commands
         self.features: Features
@@ -107,9 +118,17 @@ class Config:
                 'guild_id': None,
                 'guild_channel_id': None,
                 'status_category_id': None,
+                'live_chat_category_id': None,
                 'logs_channel_id': None
             },
-            "Database": {
+            'LiveChat': {
+                'chat_task': True,
+                'listen_port': None,
+                'remote_port': None,
+                "max_lines": 3,
+                'api_key': None
+            },
+            'Database': {
                 "host": "localhost",
                 "username": "postgres",
                 "password": None,
@@ -177,7 +196,18 @@ class Config:
                 my_json['Discord']['guild_id'],
                 my_json['Discord']['guild_channel_id'],
                 my_json['Discord']['status_category_id'],
+                my_json['Discord']['live_chat_category_id'],
                 my_json['Discord']['logs_channel_id']
+            )
+
+            self.livechat = LiveChat(
+                Toggle(
+                    my_json['LiveChat']['chat_task']
+                ),
+                my_json['LiveChat']['listen_port'],
+                my_json['LiveChat']['remote_port'],
+                my_json['LiveChat']['max_lines'],
+                my_json['LiveChat']['api_key']
             )
 
             self.database = Database(

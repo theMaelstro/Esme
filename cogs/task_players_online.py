@@ -97,10 +97,9 @@ class PlayersOnlineTask(BaseCog):
                 "Logs channel not configured."
             )
         channels = [channel.name.split(":")[0] for channel in category.channels]
-        print(channels)
         for i, server in enumerate(servers):
             if not f"{server.world_name} {server.land}" in channels:
-                logging.error(
+                logging.info(
                     "Creating Missing Channel: %s, %s",
                     f"{server.world_name} {server.land}",
                     self.__cog_name__
