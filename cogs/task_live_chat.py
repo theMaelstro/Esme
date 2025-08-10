@@ -119,7 +119,7 @@ class LiveChatTask(BaseCog):
         """Receive message from server and send it to discord channel."""
         for channel in self.channels:
             if channel.name == self.get_server_name_by_id(channel_id):
-                await channel.send(f"{player}: {content}")
+                await channel.send(f"**{player}**: {content}")
                 return True
         return False
 
@@ -139,7 +139,7 @@ class LiveChatTask(BaseCog):
                     title="Warning Not Sent",
                     description=(
                             "Server did not respond.\n"
-                            f"```{message.content}```"
+                            f"```{bottom_stack['content']}```"
                         ),
                     color=discord.Color.red()
                 ).set_author(name=message.author, icon_url=message.author.display_avatar)
@@ -155,11 +155,40 @@ class LiveChatTask(BaseCog):
                 channel_id = self.get_server_id_by_name(message.channel.name)
                 logging.info("Received Message: %s.", message.content)
                 player = f"{re.sub(r'[^A-Za-z0-9 ]+', '', message.author.display_name)}"
+                mentioned_user = re.compile(r'<@\d{18}>')
+                mentioned_bot = re.compile(r'<@\d{19}>')
+                emoji = re.compile(r'<:\w+:\d{19}>')
+                content = message.content
+
+                # User mentions
+                while (mu := mentioned_user.search(content)) is not None:
+                    raw_mention = mu.group()
+                    user_id = re.sub("[^0-9]", "", raw_mention)
+                    user_mention: discord.User = message.guild.get_member(int(user_id))
+                    if user_mention is not None:
+                        content = content.replace(raw_mention, user_mention.display_name)
+                    else:
+                        content = content.replace(raw_mention, "mentioned")
+                # Bot mentions
+                while (mb := mentioned_bot.search(content)) is not None:
+                    raw_mention = mb.group()
+                    user_id = re.sub("[^0-9]", "", raw_mention)
+                    user_mention: discord.User = message.guild.get_member(int(user_id))
+                    if user_mention is not None:
+                        content = content.replace(raw_mention, user_mention.display_name)
+                    else:
+                        content = content.replace(raw_mention, "mentioned")
+
+                # Emojis
+                while (me := emoji.search(content)) is not None:
+                    raw_mention = me.group()
+                    content = content.replace(raw_mention, raw_mention.split(":")[1])
+
                 content = " ".join(
                     f"{re.sub(
                         r'[^A-Za-z0-9 ]+',
                         '',
-                        message.content
+                        content
                     )}".split()
                 )
 
