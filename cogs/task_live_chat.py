@@ -2,7 +2,7 @@
 import logging
 import asyncio
 import re
-
+from typing import Literal
 from http.client import responses
 import aiohttp
 from aiohttp import web
@@ -67,7 +67,7 @@ class LiveChatTask(BaseCog):
         await runner.setup()
         self.chat_server = web.TCPSite(runner, 'localhost', CONFIG.livechat.listen_port)
 
-    async def webclient(self, channel_id: int, player: str, content: str):
+    async def webclient(self, channel_id: int, player: str, content: str, msg_type: str):
         """Open web client session and send request."""
         self.chat_client = aiohttp.ClientSession(timeout = aiohttp.ClientTimeout(total=10))
         try:
@@ -75,6 +75,7 @@ class LiveChatTask(BaseCog):
                 f"http://localhost:{CONFIG.livechat.remote_port}/chat/{channel_id}/",
                 json={
                     "api_key": CONFIG.livechat.api_key,
+                    "type": msg_type,
                     "player": player,
                     "content": content,
                 },
@@ -132,11 +133,13 @@ class LiveChatTask(BaseCog):
             response := await self.webclient(
                 bottom_stack['channel'],
                 bottom_stack['player'],
-                bottom_stack['content'])
+                bottom_stack['content'],
+                "normal"
+            )
         ) != web.HTTPOk.status_code:
             await message.channel.send(
                 embed=discord.Embed(
-                    title="Warning Not Sent",
+                    title="Warning",
                     description=(
                             "Server did not respond.\n"
                             f"```{bottom_stack['content']}```"
@@ -195,9 +198,9 @@ class LiveChatTask(BaseCog):
                 if player.strip(" ") == "" or content.strip(" ") == "":
                     await message.channel.send(
                         embed=discord.Embed(
-                            title="Warning Not Sent",
+                            title="Warning",
                             description= (
-                                "Parsed message is empty.\n"
+                                "Message was not sent.\n"
                                 "Check if your server name or message content is"
                                 " not made up of just special characters."
                             ),
@@ -205,11 +208,11 @@ class LiveChatTask(BaseCog):
                         ).set_author(name=message.author, icon_url=message.author.display_avatar)
                     )
                     return
-                if len(content) > 46*CONFIG.livechat.max_lines:
-                    content = content[:46*CONFIG.livechat.max_lines]
+                if len(content) > 92:
+                    content = content[:92]
                     await message.channel.send(
                         embed=discord.Embed(
-                            title="Warning Too Long",
+                            title="Warning",
                             description= (
                                 "Parsed message is too long.\n"
                                 "Slice will be used.\n"
@@ -305,7 +308,12 @@ class LiveChatTask(BaseCog):
         name="broadcast",
         description="Broadcast message across all in-game channels."
     )
-    async def broadcast(self, interaction: discord.Interaction, content: str):
+    async def broadcast(
+        self,
+        interaction: discord.Interaction,
+        msg_type: Literal["admin", "system"],
+        content: str
+    ):
         """Broadcast message across all in-game channels."""
         player = f"{re.sub(r'[^A-Za-z0-9 ]+', '', interaction.user.display_name)}"
         content_sane = f"{re.sub(r'[^A-Za-z0-9 ]+', '', content)}"
@@ -324,7 +332,9 @@ class LiveChatTask(BaseCog):
         for server in self.servers:
             response = await self.webclient(
                 server.server_id,
-                player, content_sane
+                player,
+                content_sane,
+                msg_type
             )
             if response is False:
                 await interaction.followup.send(

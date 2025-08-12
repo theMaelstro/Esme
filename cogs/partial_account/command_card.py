@@ -20,10 +20,6 @@ from core.exceptions import (
 )
 from core import BaseCog
 
-from data.mappings.custom.views import (
-    GuildCharactersByGuildId
-)
-
 class Card(BaseCog):
     """
     Cog handling active character card.
@@ -50,11 +46,11 @@ class Card(BaseCog):
                 # Get character list.
                 character = await self.guild_builder.select_guild_character_details_by_character_id(
                     session,
-                    discord_user.user_id
+                    discord_user.character_id
                 )
                 if character is None:
                     raise CoroutineFailed(
-                        "Query did not yield valid results."
+                        "No character selected. Please use `/character_select` command."
                     )
 
                 # Prepare embed

@@ -56,7 +56,6 @@ class LiveChat:
     chat_task: Toggle
     listen_port: int
     remote_port: int
-    max_lines: int
     api_key: str
 
 @dataclasses.dataclass
@@ -125,7 +124,6 @@ class Config:
                 'chat_task': True,
                 'listen_port': None,
                 'remote_port': None,
-                "max_lines": 3,
                 'api_key': None
             },
             'Database': {
@@ -206,7 +204,6 @@ class Config:
                 ),
                 my_json['LiveChat']['listen_port'],
                 my_json['LiveChat']['remote_port'],
-                my_json['LiveChat']['max_lines'],
                 my_json['LiveChat']['api_key']
             )
 
