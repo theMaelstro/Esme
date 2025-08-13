@@ -64,3 +64,16 @@ class UserBuilder():
             .values(psn_id=psn_id)
         )
         return await self.db.update_objects(session, stmt)
+
+    async def clear_user_psn(
+        self,
+        session,
+        user_id: int
+    ) -> (int | None):
+        """Update user by setting psn_id to NULL"""
+        stmt = (
+            update(Users)
+            .where(Users.id == user_id)
+            .values(psn_id=None)
+        )
+        return await self.db.update_objects(session, stmt)

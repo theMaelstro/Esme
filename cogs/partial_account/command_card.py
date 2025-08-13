@@ -3,11 +3,8 @@ import re
 import logging
 
 import discord
-from discord.ext import commands
-from discord import app_commands
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from settings import CONFIG
 from data.connector import CONN
 from data import (
     DiscordBuilder,
@@ -18,9 +15,8 @@ from core.exceptions import (
     CoroutineFailed,
     DiscordNotRegistered
 )
-from core import BaseCog
 
-class Card(BaseCog):
+class Card():
     """
     Cog handling active character card.
     """
@@ -110,7 +106,7 @@ class Card(BaseCog):
                 logging.warning("%s: %s", interaction.user.id, e)
                 await interaction.response.send_message(
                     embed=discord.Embed(
-                        title="Character Select Failed",
+                        title="Card Failed",
                         description=e,
                         color=discord.Color.red()
                     ),
@@ -123,7 +119,7 @@ class Card(BaseCog):
                 logging.error("%s: %s", interaction.user.id, e)
                 await interaction.response.send_message(
                     embed=discord.Embed(
-                        title="Character Select Failed",
+                        title="Card Failed",
                         description=e,
                         color=discord.Color.red()
                     ),

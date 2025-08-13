@@ -9,6 +9,7 @@ from .partial_account import (
     BindCredentials,
     BindToken,
     Card,
+    PsnClear,
     PsnSet,
     TokenReset
 )
@@ -85,6 +86,17 @@ class AccountCog(BaseCog):
         partial_psn_set = PsnSet()
         await partial_psn_set.psn_set(interaction)
 
+    @group_psn.command(name="clear")
+    @app_commands.checks.cooldown(
+        1,
+        CONFIG.commands.account_psn_clear.cooldown,
+        key=lambda i: (i.guild_id, i.user.id)
+    )
+    async def account_psn_clear(self, interaction: discord.Interaction) -> None:
+        """Clean PSN ID binding from your game user account."""
+        partial_psn_clear = PsnClear()
+        await partial_psn_clear.psn_clear(interaction)
+
     @group_token.command(name="reset")
     @app_commands.checks.cooldown(
         1,
@@ -103,7 +115,7 @@ class AccountCog(BaseCog):
         key=lambda i: (i.guild_id, i.user.id)
     )
     async def account_bind_credentials(self, interaction: discord.Interaction) -> None:
-        """Lists members of your guild."""
+        """Bind game account with discord by using in game username and password."""
         partial_bind_credentials = BindCredentials()
         await partial_bind_credentials.bind_credentials(interaction)
 
@@ -114,11 +126,12 @@ class AccountCog(BaseCog):
         key=lambda i: (i.guild_id, i.user.id)
     )
     async def account_bind_token(self, interaction: discord.Interaction) -> None:
-        """Lists members of your guild."""
+        """Bind game account with discord by using in game generated token."""
         partial_bind_token = BindToken()
         await partial_bind_token.bind_token(interaction)
 
     @account_card.error
+    @account_psn_clear.error
     @account_psn_set.error
     @account_token_reset.error
     @account_bind_credentials.error

@@ -2,8 +2,6 @@
 import logging
 
 import discord
-from discord.ext import commands
-from discord import app_commands
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from settings import CONFIG
@@ -15,7 +13,6 @@ from core.exceptions import (
     UnmatchingPasswords,
     DiscordNotRegistered
 )
-from core import BaseCog
 from core.crypto import check_password
 
 async def m_token_reset(

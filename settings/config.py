@@ -73,6 +73,7 @@ class Commands:
     account_bind_credentials: Command
     account_bind_token: Command
     account_card: Command
+    account_psn_clear: Command
     account_set_psn: Command
     account_token_reset: Command
     character_select: Command
@@ -137,6 +138,7 @@ class Config:
                 'account_bind_credentials': {"enabled": True, "cooldown": 0.0},
                 'account_bind_token': {"enabled": True, "cooldown": 0.0},
                 'account_card': {"enabled": True, "cooldown": 0.0},
+                'account_psn_clear': {"enabled": True, "cooldown": 0.0},
                 'account_set_psn': {"enabled": True, "cooldown": 0.0},
                 'account_token_reset': {"enabled": True, "cooldown": 0.0},
                 'character_select': {"enabled": True, "cooldown": 0.0},
@@ -227,6 +229,10 @@ class Config:
                 Command(
                     my_json['Commands']['account_card']['enabled'],
                     my_json['Commands']['account_card']['cooldown']
+                ),
+                Command(
+                    my_json['Commands']['account_psn_clear']['enabled'],
+                    my_json['Commands']['account_psn_clear']['cooldown']
                 ),
                 Command(
                     my_json['Commands']['account_set_psn']['enabled'],
