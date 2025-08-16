@@ -8,6 +8,7 @@ from core import BaseCog
 from .partial_account import (
     BindCredentials,
     BindToken,
+    CharacterSelect,
     Card,
     PsnClear,
     PsnSet,
@@ -19,8 +20,8 @@ class AccountCog(BaseCog):
     def __init__(self, client: commands.Bot):
         self.client = client
         self.app_card = app_commands.ContextMenu(
-            name='Player Card (Admin)',
-            callback = self.card_admin,
+            name='Player Card',
+            callback = self.card_app,
         )
         self.client.tree.add_command(self.app_card)
 
@@ -30,6 +31,11 @@ class AccountCog(BaseCog):
     )
     group_bind = app_commands.Group(
         name="bind",
+        parent = group_account,
+        description="..."
+    )
+    group_character = app_commands.Group(
+        name="character",
         parent = group_account,
         description="..."
     )
@@ -56,24 +62,14 @@ class AccountCog(BaseCog):
         await partial_card.card(interaction, None)
 
     # Card Application Command
-    async def card_admin(
+    async def card_app(
             self,
             interaction: discord.Interaction,
             member: discord.Member
     ):
         """Display your character information card."""
-        if interaction.user.id in CONFIG.discord.admin_user_ids:
-            partial_card = Card()
-            await partial_card.card(interaction, member)
-        else:
-            await interaction.response.send_message(
-                    embed=discord.Embed(
-                        title="Failed",
-                        description="You are not allowed to use this command.",
-                        color=discord.Color.red()
-                    ),
-                    ephemeral=True
-                )
+        partial_card = Card()
+        await partial_card.card(interaction, member)
 
     @group_psn.command(name="set")
     @app_commands.checks.cooldown(
@@ -130,12 +126,24 @@ class AccountCog(BaseCog):
         partial_bind_token = BindToken()
         await partial_bind_token.bind_token(interaction)
 
+    @group_character.command(name="select")
+    @app_commands.checks.cooldown(
+        1,
+        CONFIG.commands.character_select.cooldown,
+        key=lambda i: (i.guild_id, i.user.id)
+    )
+    async def account_character_select(self, interaction: discord.Interaction) -> None:
+        """Select active character."""
+        partial_character_select = CharacterSelect()
+        await partial_character_select.character_select(interaction)
+
     @account_card.error
     @account_psn_clear.error
     @account_psn_set.error
     @account_token_reset.error
     @account_bind_credentials.error
     @account_bind_token.error
+    @account_character_select.error
     async def on_account_error(
         self,
         interaction: discord.Interaction,

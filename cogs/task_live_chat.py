@@ -158,23 +158,13 @@ class LiveChatTask(BaseCog):
                 channel_id = self.get_server_id_by_name(message.channel.name)
                 logging.info("Received Message: %s.", message.content)
                 player = f"{re.sub(r'[^A-Za-z0-9 ]+', '', message.author.display_name)}"
-                mentioned_user = re.compile(r'<@\d{18}>')
-                mentioned_bot = re.compile(r'<@\d{19}>')
-                emoji = re.compile(r'<:\w+:\d{19}>')
+                mentioned_user = re.compile(r'<@\d{16,20}>')
+                emoji = re.compile(r'<:\w+:\d{16,20}>')
                 content = message.content
 
                 # User mentions
                 while (mu := mentioned_user.search(content)) is not None:
                     raw_mention = mu.group()
-                    user_id = re.sub("[^0-9]", "", raw_mention)
-                    user_mention: discord.User = message.guild.get_member(int(user_id))
-                    if user_mention is not None:
-                        content = content.replace(raw_mention, user_mention.display_name)
-                    else:
-                        content = content.replace(raw_mention, "mentioned")
-                # Bot mentions
-                while (mb := mentioned_bot.search(content)) is not None:
-                    raw_mention = mb.group()
                     user_id = re.sub("[^0-9]", "", raw_mention)
                     user_mention: discord.User = message.guild.get_member(int(user_id))
                     if user_mention is not None:

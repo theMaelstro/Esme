@@ -5,6 +5,7 @@ import logging
 import discord
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
+from settings import CONFIG
 from data.connector import CONN
 from data import (
     DiscordBuilder,
@@ -46,49 +47,60 @@ class Card():
                 )
                 if character is None:
                     raise CoroutineFailed(
-                        "No character selected. Please use `/character_select` command."
+                        "No character selected. Please use `/account character select` command."
                     )
+
+                elevated = (
+                    interaction.user.id in CONFIG.discord.admin_user_ids
+                    or interaction.user.id == member.id
+                )
 
                 # Prepare embed
                 embed=discord.Embed(
-                    title=re.escape(character.character_name),
+                    title=
+                        (f'{character.uid} | {character.character_id} | ' if elevated
+                        else '') + re.escape(character.character_name),
+                    description=f"**{re.escape(character.guild_name)}**",
                     color=discord.Color.blue()
                 )
-                embed.add_field(
-                    name = 'ID',
-                    value = character.id,
-                    inline = True
-                )
-                embed.add_field(
-                    name = 'HR',
-                    value = character.hr,
-                    inline = True
-                )
-                embed.add_field(
-                    name = 'GR',
-                    value = character.gr,
-                    inline = True
-                )
-                embed.add_field(
-                    name = 'LAST LOGIN',
-                    value = f"<t:{character.last_login}:f>",
-                    inline = False
-                )
-                embed.add_field(
-                    name = 'KP',
-                    value = character.kouryou_point,
-                    inline = True
-                )
-                embed.add_field(
-                    name = 'GCP',
-                    value = character.gcp,
-                    inline = True
-                )
-                embed.add_field(
-                    name = 'NP',
-                    value = character.netcafe_points,
-                    inline = True
-                )
+                embed.description += f"\nmember since\n<t:{round(character.joined_at_epoch)}:d>"
+                if elevated and character.psn_id :
+                    embed.description += f"\n\n**PSN**: `{re.escape(character.psn_id)}`"
+
+                if character.gr > 0:
+                    embed.add_field(
+                        name = 'GR',
+                        value = character.gr,
+                        inline = True
+                    )
+                else:
+                    embed.add_field(
+                        name = 'HR',
+                        value = character.hr,
+                        inline = True
+                    )
+
+                if elevated:
+                    embed.add_field(
+                        name = 'LAST LOGIN',
+                        value = f"<t:{character.last_login}:f>",
+                        inline = False
+                    )
+                    embed.add_field(
+                        name = 'KP',
+                        value = character.kouryou_point,
+                        inline = True
+                    )
+                    embed.add_field(
+                        name = 'GCP',
+                        value = character.gcp,
+                        inline = True
+                    )
+                    embed.add_field(
+                        name = 'NP',
+                        value = character.netcafe_points,
+                        inline = True
+                    )
 
                 embed.set_thumbnail(url=get_weapon_type_image_url(character.weapon_type))
                 embed.set_author(

@@ -11,6 +11,6 @@ class Discord(Base):
     """Discord table object"""
     __tablename__ = "discord"
     id: Mapped[int] = mapped_column(primary_key=True)
-    discord_id: Mapped[str] = mapped_column(VARCHAR(18))
+    discord_id: Mapped[str] = mapped_column(VARCHAR(21))
     user_id: Mapped[int]
     character_id: Mapped[int] = mapped_column(nullable=True)

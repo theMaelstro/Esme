@@ -19,25 +19,11 @@ from core.exceptions import (
 )
 from core import BaseCog
 
-class CharacterSelect(BaseCog):
-    """
-    Cog handling active character selection.
-    Mandatory for context commands.
-    """
-    def __init__(self, client: commands.Bot):
-        self.client = client
+class CharacterSelect():
+    def __init__(self):
         self.characters_builder = CharactersBuilder()
         self.discord_builder = DiscordBuilder()
 
-    @app_commands.command(
-        name="character_select",
-        description="Select active character."
-    )
-    @app_commands.checks.cooldown(
-        1,
-        CONFIG.commands.character_select.cooldown,
-        key=lambda i: (i.guild_id, i.user.id)
-    )
     async def character_select(self, interaction: discord.Interaction):
         """Select active character."""
         # Create session
@@ -118,7 +104,7 @@ class CharacterSelect(BaseCog):
 
                         emb.set_thumbnail(url=get_weapon_type_image_url(character.weapon_type))
                         emb.set_author(
-                            name=f"{interaction.user} characters.",
+                            name=f"{interaction.user} characters",
                             icon_url=interaction.user.avatar.url
                         )
                     n = Pagination.compute_total_pages(len(elements), page_elements)
@@ -160,17 +146,3 @@ class CharacterSelect(BaseCog):
                     ),
                     ephemeral=True
                 )
-
-    @character_select.error
-    async def on_character_select_error(
-        self,
-        interaction: discord.Interaction,
-        error: app_commands.AppCommandError
-    ):
-        """On cooldown send remaining time info message."""
-        await self.on_cooldown_response(interaction, error)
-
-async def setup(client:commands.Bot) -> None:
-    """Initialize cog."""
-    if CONFIG.commands.character_select.enabled:
-        await client.add_cog(CharacterSelect(client))
