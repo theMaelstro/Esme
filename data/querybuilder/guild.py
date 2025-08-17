@@ -1,4 +1,5 @@
 """Query Builder module for Guild related queries."""
+from typing import Literal
 from sqlalchemy import (
     select,
     update,
@@ -175,6 +176,39 @@ class GuildBuilder():
         rows = await self.db.select_object(session, stmt)
         return rows
 
+    async def get_guild_members_count(self, session, guild_id: int):
+        """Select online players sum across all servers."""
+        stmt = select(
+            func.count()    # pylint: disable=[not-callable]
+        ).select_from(
+            GuildCharacters
+        ).where(
+            GuildCharacters.guild_id == guild_id
+        )
+
+        row = await self.db.select_object(session, stmt)
+        print("TEST: ", row)
+        return row
+
+    async def insert_guild_application(
+        self,
+        session,
+        guild_id: int,
+        character_id: int,
+        actor_id: int,
+        application_type: Literal["invited", "applied"] = "invited"
+    ):
+        """Insert guild application."""
+        values = [
+            GuildApplications(
+                guild_id=guild_id,
+                character_id=character_id,
+                actor_id=actor_id,
+                application_type=application_type
+            )
+        ]
+        await self.db.insert_objects(session, values)
+
     async def select_recruiter_discord_ids(self, session, guild_id: int):
         """Select guild recruiters."""
         # TODO: Break queries into corresponding builders
@@ -207,10 +241,8 @@ class GuildBuilder():
         )
 
         character_id_leader = await self.db.select_objects(session, stmt_leader)
-        print("sqtest query")
         character_id_recruiters = await self.db.select_objects(session, stmt_recruiters)
 
-        print("sqtest", character_id_recruiters)
         character_ids = []
         if character_id_leader is not None:
             for character in character_id_leader:
@@ -218,7 +250,6 @@ class GuildBuilder():
 
         if character_id_recruiters is not None:
             for character in character_id_recruiters:
-                print("sqtest", character)
                 character_ids.append(character.character_id)
 
         if len(character_ids) == 0:

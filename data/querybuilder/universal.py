@@ -22,8 +22,8 @@ class UniversalBuilder():
         stmt = select(
             func.sum(Servers.current_players)
         )
-        rows = await self.db.select_object(session, stmt)
-        return rows
+        row = await self.db.select_object(session, stmt)
+        return row
 
     async def get_players_online_per_land(self, session):
         """Select online players sum per land."""

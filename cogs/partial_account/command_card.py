@@ -58,7 +58,7 @@ class Card():
                 # Prepare embed
                 embed=discord.Embed(
                     title=
-                        (f'{character.uid} | {character.character_id} | ' if elevated
+                        (f'{character.uid} | {character.character_id} | ' if interaction.user.id in CONFIG.discord.admin_user_ids
                         else '') + re.escape(character.character_name),
                     description=f"**{re.escape(character.guild_name)}**",
                     color=discord.Color.blue()

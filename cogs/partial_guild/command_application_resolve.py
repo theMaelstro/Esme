@@ -16,6 +16,7 @@ from data import (
 from core.exceptions import (
     CoroutineFailed,
     DiscordNotRegistered,
+    GuildFull,
     InvalidArgument,
     MissingPermissions
 )
@@ -66,6 +67,16 @@ class ApplicationResolve():
 
                 # On application accepted.
                 if decision:
+                    members_count = await self.guild_builder.get_guild_members_count(
+                        session,
+                        guild_application.guild_id
+                    )
+                    if members_count >= 90:
+                        raise(
+                            GuildFull(
+                                "Guild is full. Expel some members."
+                            )
+                        )
                     await self.guild_builder.insert_guild_member(
                         session,
                         guild_application.guild_id,
@@ -104,6 +115,18 @@ class ApplicationResolve():
                 await session.commit()
                 await session.close()
 
+        except (
+            GuildFull
+        ) as e:
+            logging.info("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Application Process Failed",
+                    description="Guild is full. Expel some members.",
+                    color=discord.Color.blue()
+                ),
+                ephemeral=True
+            )
         except (
             DiscordNotRegistered,
             InvalidArgument,

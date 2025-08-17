@@ -61,11 +61,23 @@ class CoroutineFailed(Exception):
     Following task execution not possible.
     """
 
+class GuildFull(Exception):
+    """
+    Guild is full. Expel some members
+    to make space for new ones.
+    """
+
 class SettingNotConfigured(Exception):
     """Setting not configured in json file."""
 
 class CharacterNotInGuild(Exception):
     """Character is not a Guild member."""
+
+class CharacterNotSet(Exception):
+    """Character is not set."""
+
+class CharacterAlreadyInGuild(Exception):
+    """Character is already a guild member."""
 
 class MissingGuildApplications(Exception):
     """No Guild Applications found."""

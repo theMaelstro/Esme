@@ -16,6 +16,7 @@ from data import (
 from core.exceptions import (
     CoroutineFailed,
     DiscordNotRegistered,
+    GuildFull,
     InvalidArgument,
     MissingPermissions,
     CharacterNotInGuild,
@@ -65,6 +66,16 @@ class DynamicApplicationView(discord.ui.View):
                             "Applictaion does not exist."
                         )
                     )
+                members_count = await self.guild_builder.get_guild_members_count(
+                    session,
+                    guild_application.guild_id
+                )
+                if members_count >= 90:
+                    raise(
+                        GuildFull(
+                            "Guild is full. Expel some members."
+                        )
+                    )
                 await self.guild_builder.insert_guild_member(
                     session,
                     guild_application.guild_id,
@@ -87,7 +98,18 @@ class DynamicApplicationView(discord.ui.View):
                 # Close Session
                 await session.commit()
                 await session.close()
-
+        except (
+            GuildFull
+        ) as e:
+            logging.info("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Application Process Failed",
+                    description="Guild is full. Expel some members.",
+                    color=discord.Color.blue()
+                ),
+                ephemeral=True
+            )
         except (
             CoroutineFailed
         ) as e:
@@ -228,17 +250,18 @@ class ApplicationList():
                     session,
                     guild_character.guild_id
                 )
-                print("sqtest: command: ", discord_ids, guild_character, guild_character.guild_id)
+
                 if str(interaction.user.id) not in discord_ids:
                     raise MissingPermissions(
                         "You are not elevated guild member."
                     )
 
                 guild_applications = await self.guild_builder.select_guild_applications_detail_by_guild_id(
-                    session, guild_character.guild_id
+                    session,
+                    guild_character.guild_id
                 )
 
-                if guild_applications is None:
+                if guild_applications is None or len(guild_applications) <= 0:
                     raise MissingGuildApplications(
                         "No Guild Applications found."
                     )
@@ -269,18 +292,27 @@ class ApplicationList():
             )
 
         except (
+            MissingGuildApplications
+        ) as e:
+            logging.info("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Application List",
+                    description="No applications pending.",
+                    color=discord.Color.blue()
+                ),
+                ephemeral=True
+            )
+        except (
             DiscordNotRegistered,
             InvalidArgument,
             MissingPermissions,
             CharacterNotInGuild,
-            MissingGuildApplications
-
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Application Process Failed",
-                    description=e,
                     color=discord.Color.red()
                 ),
                 ephemeral=True
@@ -292,7 +324,6 @@ class ApplicationList():
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Application Process Failed",
-                    description=e,
                     color=discord.Color.red()
                 ),
                 ephemeral=True
@@ -304,7 +335,6 @@ class ApplicationList():
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Application Process Failed",
-                    description=e,
                     color=discord.Color.red()
                 ),
                 ephemeral=True

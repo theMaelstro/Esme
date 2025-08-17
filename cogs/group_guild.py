@@ -8,6 +8,7 @@ from core import BaseCog
 from .partial_guild import (
     ApplicationList,
     ApplicationResolve,
+    GuildInvite,
     MembersList
 )
 
@@ -85,10 +86,22 @@ class GuildCog(BaseCog):
         partial_members = MembersList()
         await partial_members.guild_members(interaction)
 
+    @group_guild.command(name="invite")
+    @app_commands.checks.cooldown(
+        1,
+        CONFIG.commands.guild_members.cooldown,
+        key=lambda i: (i.guild_id, i.user.id)
+    )
+    async def guild_invite(self, interaction: discord.Interaction, member: discord.Member) -> None:
+        """Invite registered discord user to guild."""
+        partial_invite = GuildInvite()
+        await partial_invite.guild_invite(interaction, member)
+
     @guild_application_list.error
     @guild_application_accept.error
     @guild_application_reject.error
     @guild_members_list.error
+    @guild_invite.error
     async def on_guild_error(
         self,
         interaction: discord.Interaction,

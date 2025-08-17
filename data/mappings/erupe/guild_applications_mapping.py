@@ -1,4 +1,5 @@
 """Table mappings module"""
+from typing import Literal
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 
@@ -11,3 +12,4 @@ class GuildApplications(Base):
     guild_id: Mapped[int]
     character_id: Mapped[int]
     actor_id: Mapped[int]
+    application_type: Mapped[Literal["invited", "applied"]]
