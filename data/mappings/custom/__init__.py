@@ -1,5 +1,6 @@
 from .tables import Discord
 from .views import (
     GuildCharactersByGuildId,
-    GuildApplicationsDetails
+    GuildApplicationsDetails,
+    CharacterDetails
 )

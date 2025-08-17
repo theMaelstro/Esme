@@ -7,6 +7,9 @@ from data.mappings.erupe import (
     Characters,
     Mail
 )
+from data.mappings.custom.views import (
+    CharacterDetails
+)
 
 class CharactersBuilder():
     """Query builder class for Characters table."""
@@ -60,6 +63,17 @@ class CharactersBuilder():
 
         ).where(
             Characters.id == character_id
+        )
+
+        rows = await self.db.select_object(session, stmt)
+        return rows
+
+    async def select_character_details_by_character_id(self, session, character_id):
+        """Select guild characters details by their guild id"""
+        stmt = select(
+            CharacterDetails
+        ).where(
+            CharacterDetails.character_id == character_id
         )
 
         rows = await self.db.select_object(session, stmt)

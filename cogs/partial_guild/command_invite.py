@@ -1,30 +1,22 @@
 """Extension module for GuildMembers Cog."""
-import re
 import logging
 
 import discord
-from discord.ext import commands
-from discord import app_commands
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from settings import CONFIG
 from data.connector import CONN
 from data import (
     CharactersBuilder,
     DiscordBuilder,
     GuildBuilder
 )
-from core.view.pagination import Pagination
-from core import BaseCog
+
 from core.exceptions import (
     CoroutineFailed,
     CharacterNotSet,
     CharacterAlreadyInGuild,
     DiscordNotRegistered,
-    InvalidArgument,
-    MissingPermissions,
-    CharacterNotInGuild,
-    MissingGuildApplications
+    MissingPermissions
 )
 
 class GuildInvite():
@@ -37,6 +29,11 @@ class GuildInvite():
     async def guild_invite(self, interaction: discord.Interaction, member: discord.Member):
         """Show all guilds."""
         try:
+            if interaction.user.id == member.id:
+                raise CoroutineFailed(
+                    "You can't invite yourself."
+                )
+
             # Start session
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
@@ -84,12 +81,12 @@ class GuildInvite():
                     )
 
                 # Get recipient character.
-                recipient_character = await self.guild_builder.select_guild_character_details_by_character_id(
+                recipient_character = await self.character_builder.select_character_details_by_character_id(
                     session,
                     discord_recipient.character_id
                 )
 
-                if recipient_character:
+                if recipient_character.guild_id:
                     raise CharacterAlreadyInGuild(
                         "Character aleady in guild."
                     )
@@ -134,6 +131,7 @@ class GuildInvite():
                 )
 
         except (
+            CoroutineFailed,
             DiscordNotRegistered,
             CharacterNotSet,
             CharacterAlreadyInGuild,

@@ -8,12 +8,13 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from settings import CONFIG
 from data.connector import CONN
 from data import (
-    DiscordBuilder,
-    GuildBuilder
+    CharactersBuilder,
+    DiscordBuilder
 )
 from core import get_weapon_type_image_url
 from core.exceptions import (
     CoroutineFailed,
+    CharacterNotSet,
     DiscordNotRegistered
 )
 
@@ -22,7 +23,7 @@ class Card():
     Cog handling active character card.
     """
     def __init__(self):
-        self.guild_builder = GuildBuilder()
+        self.character_builder = CharactersBuilder()
         self.discord_builder = DiscordBuilder()
 
     async def card(self, interaction: discord.Interaction, member: discord.Member):
@@ -41,12 +42,12 @@ class Card():
                     )
 
                 # Get character list.
-                character = await self.guild_builder.select_guild_character_details_by_character_id(
+                character = await self.character_builder.select_character_details_by_character_id(
                     session,
                     discord_user.character_id
                 )
                 if character is None:
-                    raise CoroutineFailed(
+                    raise CharacterNotSet(
                         "No character selected. Please use `/account character select` command."
                     )
 
@@ -58,13 +59,24 @@ class Card():
                 # Prepare embed
                 embed=discord.Embed(
                     title=
-                        (f'{character.uid} | {character.character_id} | ' if interaction.user.id in CONFIG.discord.admin_user_ids
-                        else '') + re.escape(character.character_name),
-                    description=f"**{re.escape(character.guild_name)}**",
+                        (
+                            f'{character.uid} | {character.character_id} | '
+                            if interaction.user.id in CONFIG.discord.admin_user_ids
+                            else ''
+                        ) + re.escape(character.character_name),
+                    description='',
                     color=discord.Color.blue()
                 )
-                embed.description += f"\nmember since\n<t:{round(character.joined_at_epoch)}:d>"
-                if elevated and character.psn_id :
+
+                if character.guild_name:
+                    embed.description += (
+                        f'**{character.guild_id} |** '
+                            if interaction.user.id in CONFIG.discord.admin_user_ids
+                            else ''
+                    ) + f"**{re.escape(character.guild_name)}**"
+                    embed.description += f"\nmember since\n<t:{round(character.joined_at_epoch)}:d>"
+
+                if elevated and character.psn_id:
                     embed.description += f"\n\n**PSN**: `{re.escape(character.psn_id)}`"
 
                 if character.gr > 0:
@@ -103,17 +115,25 @@ class Card():
                     )
 
                 embed.set_thumbnail(url=get_weapon_type_image_url(character.weapon_type))
-                embed.set_author(
-                    name=f"{interaction.user}",
-                    icon_url=interaction.user.avatar.url
-                )
+                if member:
+                    embed.set_author(
+                        name=f"{member}",
+                        icon_url=member.avatar.url
+                    )
+                else:
+                    embed.set_author(
+                        name=f"{interaction.user}",
+                        icon_url=interaction.user.avatar.url
+                    )
+
                 await interaction.response.send_message(
                     embed=embed,
                     ephemeral=True
                 )
 
             except (
-                DiscordNotRegistered
+                DiscordNotRegistered,
+                CharacterNotSet
             ) as e:
                 logging.warning("%s: %s", interaction.user.id, e)
                 await interaction.response.send_message(
