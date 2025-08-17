@@ -38,7 +38,10 @@ class DiscordBuilder():
         stmt = (
             update(Discord)
             .where(Discord.discord_id == discord_id)
-            .values(user_id=user_id)
+            .values(
+                user_id=user_id,
+                character_id=None
+            )
         )
         return await self.db.update_objects(session, stmt)
 
