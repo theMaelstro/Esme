@@ -36,6 +36,7 @@ class Card():
                 discord_user = await self.discord_builder.select_discord_user(
                     session, str(interaction.user.id) if not member else str(member.id)
                 )
+
                 if discord_user is None:
                     raise DiscordNotRegistered(
                         "No account registered for this discord user."
@@ -53,7 +54,8 @@ class Card():
 
                 elevated = (
                     interaction.user.id in CONFIG.discord.admin_user_ids
-                    or interaction.user.id == member.id
+                ) or (
+                    interaction.user.id == member.id if member else False
                 )
 
                 # Prepare embed
@@ -130,7 +132,6 @@ class Card():
                     embed=embed,
                     ephemeral=True
                 )
-
             except (
                 DiscordNotRegistered,
                 CharacterNotSet
