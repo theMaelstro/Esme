@@ -16,6 +16,11 @@ class GuildCog(BaseCog):
     """Cog handling guild applications."""
     def __init__(self, client: commands.Bot):
         self.client = client
+        self.app_guild_invite = app_commands.ContextMenu(
+            name='Guild Invite',
+            callback = self.guild_invite_app,
+        )
+        self.client.tree.add_command(self.app_guild_invite)
 
     group_guild = app_commands.Group(
         name="guild",
@@ -94,6 +99,16 @@ class GuildCog(BaseCog):
     )
     async def guild_invite(self, interaction: discord.Interaction, member: discord.Member) -> None:
         """Invite registered discord user to guild."""
+        partial_invite = GuildInvite()
+        await partial_invite.guild_invite(interaction, member)
+
+    # Guild Invite Application Command
+    async def guild_invite_app(
+            self,
+            interaction: discord.Interaction,
+            member: discord.Member
+    ):
+        """Display your character information card."""
         partial_invite = GuildInvite()
         await partial_invite.guild_invite(interaction, member)
 

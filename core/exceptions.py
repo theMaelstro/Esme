@@ -79,5 +79,8 @@ class CharacterNotSet(Exception):
 class CharacterAlreadyInGuild(Exception):
     """Character is already a guild member."""
 
+class CharacterPendingInvite(Exception):
+    """Character is already pending invite from guild."""
+
 class MissingGuildApplications(Exception):
     """No Guild Applications found."""

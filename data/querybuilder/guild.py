@@ -176,6 +176,20 @@ class GuildBuilder():
         rows = await self.db.select_object(session, stmt)
         return rows
 
+    async def check_guild_application(self, session, character_id: int, guild_id: int):
+        """Check if guild application exist."""
+        stmt = select(
+            GuildApplications
+        ).where(
+            and_(
+                GuildApplications.character_id == character_id,
+                GuildApplications.guild_id == guild_id
+            )
+        )
+
+        rows = await self.db.select_object(session, stmt)
+        return rows
+
     async def get_guild_members_count(self, session, guild_id: int):
         """Select online players sum across all servers."""
         stmt = select(

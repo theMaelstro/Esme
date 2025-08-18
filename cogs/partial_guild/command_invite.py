@@ -14,6 +14,7 @@ from data import (
 from core.exceptions import (
     CoroutineFailed,
     CharacterNotSet,
+    CharacterPendingInvite,
     CharacterAlreadyInGuild,
     DiscordNotRegistered,
     MissingPermissions
@@ -91,6 +92,17 @@ class GuildInvite():
                         "Character aleady in guild."
                     )
 
+                application_check = await self.guild_builder.check_guild_application(
+                    session,
+                    discord_recipient.character_id,
+                    sender_character.guild_id
+                )
+
+                if application_check:
+                    raise CharacterPendingInvite(
+                        "Character is already pending invite from guild."
+                    )
+
                 await self.guild_builder.insert_guild_application(
                     session,
                     sender_character.guild_id,
@@ -132,6 +144,7 @@ class GuildInvite():
 
         except (
             CoroutineFailed,
+            CharacterPendingInvite,
             DiscordNotRegistered,
             CharacterNotSet,
             CharacterAlreadyInGuild,
