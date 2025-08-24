@@ -47,7 +47,7 @@ class GuildSetLeader(BaseCog):
                     )
 
                 if not await self.guild_builder.update_guild_leader(
-                    self,
+                    session,
                     guild_id,
                     leader_id
                 ):

@@ -51,6 +51,7 @@ class PsnClear():
 
                 # Commit
                 await session.commit()
+                await session.close()
 
             except (
 
@@ -77,10 +78,6 @@ class PsnClear():
                     ),
                     ephemeral=True
                 )
-
-            finally:
-                # Close Session
-                await session.close()
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
         logging.error("%s: %s %s %s", interaction.user.id, type(error), error, error.__traceback__)

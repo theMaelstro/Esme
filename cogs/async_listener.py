@@ -105,7 +105,7 @@ class AsyncListener(BaseCog):
             # Type of Application
             embed.add_field(
                 name=f"{payload['application_type'].title()} to Guild",
-                value=re.escape(guild_application.initiate_name),
+                value=re.escape(guild_application.character_name),
                 inline=False
             )
             # Time of creation
@@ -142,7 +142,7 @@ class AsyncListener(BaseCog):
 
             # Application Creator
             embed.set_footer(
-                text=f"Requested by {re.escape(guild_application.creator_name)}"
+                text=f"Requested by {re.escape(guild_application.actor_name)}"
             )
             await channel.send(embed=embed)
 

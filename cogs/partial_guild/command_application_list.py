@@ -6,7 +6,6 @@ import logging
 import discord
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from settings import CONFIG
 from data.connector import CONN
 from data import (
     DiscordBuilder,
@@ -20,10 +19,22 @@ from core.exceptions import (
     InvalidArgument,
     MissingPermissions,
     CharacterNotInGuild,
+    CharacterNotSet,
     MissingGuildApplications
 )
-def get_app_type_emoji(type):
-    return "📥" if type == "applied" else "📤"
+from core import max_members
+
+def get_app_type_emoji(application_type: bool):
+    if application_type:
+        return "📥"
+    return "📤"
+
+def get_app_type(
+        application_type: str
+) -> bool:
+    if application_type == "applied":
+        return True
+    return False
 
 def get_option_data(options_list, match):
     for element in options_list:
@@ -39,6 +50,7 @@ class DynamicApplicationView(discord.ui.View):
     def __init__(
             self,
             option_data: dict,
+            user_is_leader: bool,
             *,
             timeout = 180,
         ):
@@ -48,6 +60,7 @@ class DynamicApplicationView(discord.ui.View):
         self.application_id = option_data["value"]
         self.application_character = option_data["label"]
         self.application_type = option_data["type"]
+        self.user_is_leader=user_is_leader
         self.update_buttons()
 
     @discord.ui.button(label="Accept", style=discord.ButtonStyle.green, disabled=True)
@@ -66,30 +79,30 @@ class DynamicApplicationView(discord.ui.View):
                             "Applictaion does not exist."
                         )
                     )
-                members_count = await self.guild_builder.get_guild_members_count(
+
+                guild = await self.guild_builder.select_recruiting_guild_by_id(
                     session,
                     guild_application.guild_id
                 )
-                if members_count >= 90:
-                    raise(
-                        GuildFull(
-                            "Guild is full. Expel some members."
-                        )
+                if guild.members >= max_members(guild.guild_rp):
+                    raise GuildFull(
+                        "Guild is full and cannot accept new members."
                     )
+
                 await self.guild_builder.insert_guild_member(
                     session,
                     guild_application.guild_id,
                     guild_application.character_id
                 )
-                await self.guild_builder.delete_guild_application(
+                await self.guild_builder.delete_guild_applications(
                     session,
-                    self.application_id
+                    guild_application.character_id
                 )
 
                 await interaction.response.edit_message(
                     embed=discord.Embed(
                         title="Application Accepted",
-                        description=f"{self.application_character} has been accepted into the guild.",
+                        description=f"{self.application_character} application accepted.",
                         color=discord.Color.green()
                     ),
                     view=None
@@ -105,7 +118,7 @@ class DynamicApplicationView(discord.ui.View):
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Application Process Failed",
-                    description="Guild is full. Expel some members.",
+                    description="Guild is full and cannot accept more members.",
                     color=discord.Color.blue()
                 ),
                 ephemeral=True
@@ -137,7 +150,7 @@ class DynamicApplicationView(discord.ui.View):
                 await interaction.response.edit_message(
                     embed=discord.Embed(
                         title="Application Rejected",
-                        description=f"{self.application_character} has been rejected from joining the guild.",
+                        description=f"{self.application_character} application cancelled.",
                         color=discord.Color.red()
                     ),
                     view=None
@@ -173,18 +186,23 @@ class DynamicApplicationView(discord.ui.View):
 
     def update_buttons(self):
         if self.application_type == "applied":
-            self.children[0].disabled = False
+            self.children[0].disabled = not self.user_is_leader
         else:
-            self.children[0].disabled = True
+            self.children[0].disabled = self.user_is_leader
 
 class DynamicSelect(discord.ui.Select):
-    def __init__(self, options: list) -> None:
+    def __init__(
+            self,
+            options: list,
+            user_is_leader: bool
+        ) -> None:
         super().__init__(
             placeholder="Select an option",
             max_values=1,
             min_values=1,
             options=options
         )
+        self.user_is_leader = user_is_leader
 
     async def callback(self, interaction: discord.Interaction):
         data = get_option_data(self.options, self.values[0])
@@ -194,13 +212,19 @@ class DynamicSelect(discord.ui.Select):
                 description="Please resolve application.",
                 color=discord.Color.blue()
             ),
-            view=DynamicApplicationView(data)
+            view=DynamicApplicationView(data, self.user_is_leader)
         )
 
 class DynamicSelectView(discord.ui.View):
-    def __init__(self, options: list, *, timeout = 180):
+    def __init__(
+            self,
+            options: list,
+            user_is_leader: bool,
+            *,
+            timeout = 180
+        ):
         super().__init__(timeout=timeout)
-        self.add_item(DynamicSelect(options))
+        self.add_item(DynamicSelect(options, user_is_leader))
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.gray)
     async def app_cancel(self, interaction: discord.Interaction, button: discord.Button):
@@ -218,6 +242,7 @@ class ApplicationList():
     def __init__(self):
         self.discord_builder = DiscordBuilder()
         self.guild_builder = GuildBuilder()
+        self.user_is_leader: bool = None
 
     async def guild_application(
         self,
@@ -237,34 +262,48 @@ class ApplicationList():
                         "No account registered for this discord user."
                 )
 
+                if discord_user.character_id is None:
+                    raise CharacterNotSet(
+                        "No character selected. Please use `/account character select` command."
+                    )
+
                 guild_character = await self.guild_builder.select_guild_character_by_character_id(
                     session, discord_user.character_id
                 )
 
-                if guild_character is None:
-                    raise CharacterNotInGuild(
-                        "Character is not a Guild member."
+                if guild_character:
+                    discord_ids = await self.guild_builder.select_recruiter_discord_ids(
+                        session,
+                        guild_character.guild_id
                     )
 
-                discord_ids = await self.guild_builder.select_recruiter_discord_ids(
-                    session,
-                    guild_character.guild_id
-                )
+                    if str(interaction.user.id) not in discord_ids:
+                        raise MissingPermissions(
+                            "You are not elevated guild member."
+                        )
 
-                if str(interaction.user.id) not in discord_ids:
-                    raise MissingPermissions(
-                        "You are not elevated guild member."
+                    self.user_is_leader = True
+                    guild_applications = await self.guild_builder.select_guild_applications_detail_by_guild_id(
+                        session,
+                        guild_character.guild_id
                     )
 
-                guild_applications = await self.guild_builder.select_guild_applications_detail_by_guild_id(
-                    session,
-                    guild_character.guild_id
-                )
-
-                if guild_applications is None or len(guild_applications) <= 0:
-                    raise MissingGuildApplications(
-                        "No Guild Applications found."
+                    if guild_applications is None or len(guild_applications) <= 0:
+                        raise MissingGuildApplications(
+                            "No Guild Applications found."
+                        )
+                
+                else:
+                    self.user_is_leader = False
+                    guild_applications = await self.guild_builder.select_guild_applications_detail_by_character_id(
+                        session,
+                        discord_user.character_id
                     )
+
+                    if guild_applications is None or len(guild_applications) <= 0:
+                        raise MissingGuildApplications(
+                            "No Guild Applications found."
+                        )
 
                 # Close Session
                 await session.commit()
@@ -272,22 +311,33 @@ class ApplicationList():
 
             options = []
             if isinstance(guild_applications, list):
-                for application in guild_applications:
-                    options.append(
-                        discord.SelectOption(
-                            label=f"{re.escape(application.initiate_name)}",
-                            value=application.id,
-                            emoji=get_app_type_emoji(application.type),
-                            description=f"{application.type}"
+                if self.user_is_leader:
+                    for application in guild_applications:
+                        options.append(
+                            discord.SelectOption(
+                                label=f"{re.escape(application.character_name)}",
+                                value=application.id,
+                                emoji=get_app_type_emoji(get_app_type(application.type)),
+                                description=f"{application.type}"
+                            )
                         )
-                    )
+                else:
+                    for application in guild_applications:
+                        options.append(
+                            discord.SelectOption(
+                                label=f"{re.escape(application.guild_name)}",
+                                value=application.id,
+                                emoji=get_app_type_emoji(not get_app_type(application.type)),
+                                description=f"{application.type}"
+                            )
+                        )
 
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Select Guild Application",
                     color=discord.Color.blue()
                 ),
-                view=DynamicSelectView(options),
+                view=DynamicSelectView(options, self.user_is_leader),
                 ephemeral=True
             )
 
@@ -313,6 +363,7 @@ class ApplicationList():
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Application Process Failed",
+                    description=e,
                     color=discord.Color.red()
                 ),
                 ephemeral=True

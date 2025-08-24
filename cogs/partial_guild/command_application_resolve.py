@@ -20,6 +20,7 @@ from core.exceptions import (
     InvalidArgument,
     MissingPermissions
 )
+from core import max_members
 
 class ApplicationResolve():
     """Cog handling guild applications."""
@@ -67,24 +68,23 @@ class ApplicationResolve():
 
                 # On application accepted.
                 if decision:
-                    members_count = await self.guild_builder.get_guild_members_count(
+                    guild = await self.guild_builder.select_recruiting_guild_by_id(
                         session,
                         guild_application.guild_id
                     )
-                    if members_count >= 90:
-                        raise(
-                            GuildFull(
-                                "Guild is full. Expel some members."
-                            )
+                    if guild.members >= max_members(guild.guild_rp):
+                        raise GuildFull(
+                            "Guild is full and cannot accept new members."
                         )
+
                     await self.guild_builder.insert_guild_member(
                         session,
                         guild_application.guild_id,
                         guild_application.character_id
                     )
-                    await self.guild_builder.delete_guild_application(
+                    await self.guild_builder.delete_guild_applications(
                         session,
-                        guild_application.id
+                        guild_application.character_id
                     )
 
                     await interaction.response.send_message(

@@ -70,6 +70,8 @@ async def m_bind_token(
 
             # Commit
             await session.commit()
+            await session.close()
+
         except (
             TokenInvalid
         ) as e:
@@ -95,10 +97,6 @@ async def m_bind_token(
                 ),
                 ephemeral=True
             )
-
-        finally:
-            # Close Session
-            await session.close()
 
 class ModalBindToken(
     discord.ui.Modal,

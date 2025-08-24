@@ -61,11 +61,22 @@ class CoroutineFailed(Exception):
     Following task execution not possible.
     """
 
+class GuildAlreadyApplied(Exception):
+    """
+    Character already applied to given guild.
+    """
+
 class GuildFull(Exception):
     """
     Guild is full. Expel some members
     to make space for new ones.
     """
+
+class GuildNameInvalid(Exception):
+    """Guild Name is invalid."""
+
+class GuildLeaderCandidateMissing(Exception):
+    """No valid candidate to replace guild leader."""
 
 class SettingNotConfigured(Exception):
     """Setting not configured in json file."""
@@ -81,6 +92,9 @@ class CharacterAlreadyInGuild(Exception):
 
 class CharacterPendingInvite(Exception):
     """Character is already pending invite from guild."""
+
+class CharacterNameInvalid(Exception):
+    """Character Name is invalid."""
 
 class MissingGuildApplications(Exception):
     """No Guild Applications found."""

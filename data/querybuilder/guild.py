@@ -21,8 +21,10 @@ from data.mappings.custom.tables import (
     Discord
 )
 from data.mappings.custom.views import (
+    GuildApplicationsDetails,
     GuildCharactersByGuildId,
-    GuildApplicationsDetails
+    GuildRecruitmentDetails
+    
 )
 class GuildBuilder():
     """Query builder class for Guild table."""
@@ -49,17 +51,68 @@ class GuildBuilder():
         rows = await self.db.select_objects(session, stmt)
         return rows
 
+    async def select_recruiting_guilds(self, session):
+        """Select list of recruiting guilds."""
+        stmt = select(
+            GuildRecruitmentDetails
+        ).options(
+            load_only(
+                GuildRecruitmentDetails.guild_id,
+                GuildRecruitmentDetails.guild_name,
+                GuildRecruitmentDetails.leader_name,
+                GuildRecruitmentDetails.members
+            )
+        )
+
+        rows = await self.db.select_objects(session, stmt)
+        return rows
+
+    async def select_recruiting_guild_by_id(self, session, guild_id: int):
+        """Select specific recruiting guild."""
+        stmt = select(
+            GuildRecruitmentDetails
+        ).options(
+            load_only(
+                GuildRecruitmentDetails.guild_id,
+                GuildRecruitmentDetails.guild_rp,
+                GuildRecruitmentDetails.members
+            )
+        ).where(
+            GuildRecruitmentDetails.guild_id == guild_id
+        )
+
+        row = await self.db.select_object(session, stmt)
+        return row
+
     async def update_guild_leader(
         self,
         session,
-        guild_id,
-        leader_id
+        guild_id: int,
+        leader_id: int
     ) -> (int | None):
         """Update leader id"""
         stmt = (
             update(Guilds)
             .where(Guilds.id == guild_id)
             .values(leader_id=leader_id)
+        )
+        return await self.db.update_objects(session, stmt)
+
+    async def update_guild_member_position(
+        self,
+        session,
+        character_id: int,
+        order_index: int
+    ) -> (int | None):
+        """Update guild member position."""
+        stmt = (
+            update(
+                GuildCharacters
+            ).where(
+                GuildCharacters.character_id == character_id
+            ).values(
+                order_index=order_index
+            )
         )
         return await self.db.update_objects(session, stmt)
 
@@ -128,6 +181,18 @@ class GuildBuilder():
         rows = await self.db.select_object(session, stmt)
         return rows
 
+    async def select_guild_character_details(self, session):
+        """Select guild characters details by their guild id"""
+        stmt = select(
+            GuildCharactersByGuildId
+        ).order_by(
+            GuildCharactersByGuildId.guild_id,
+            GuildCharactersByGuildId.order_index
+        )
+
+        rows = await self.db.select_objects(session, stmt)
+        return rows
+
     async def select_guild_character_details_by_character_id(self, session, character_id):
         """Select guild characters details by their guild id"""
         stmt = select(
@@ -141,7 +206,11 @@ class GuildBuilder():
         rows = await self.db.select_object(session, stmt)
         return rows
 
-    async def select_guild_application_detail_by_id(self, session, application_id: int):
+    async def select_guild_application_detail_by_id(
+        self,
+        session,
+        application_id: int
+    ):
         """Select guild application detail by id"""
         stmt = select(
             GuildApplicationsDetails
@@ -152,12 +221,64 @@ class GuildBuilder():
         rows = await self.db.select_object(session, stmt)
         return rows
 
-    async def select_guild_applications_detail_by_guild_id(self, session, guild_id: int):
+    async def select_guild_application_detail_by_character_id(
+        self,
+        session,
+        character_id: int,
+        guild_id: int
+    ):
         """Select guild application detail by id"""
+        stmt = select(
+            GuildApplications
+        ).where(
+            and_(
+                GuildApplications.character_id == character_id,
+                GuildApplications.guild_id == guild_id
+            )
+        )
+
+        row = await self.db.select_object(session, stmt)
+        return row
+
+    async def select_leader_candidate_by_guild_id(
+        self,
+        session,
+        guild_id: int
+    ):
+        """Select guild application detail by id"""
+        stmt = select(
+            GuildCharactersByGuildId
+        ).where(
+            and_(
+                GuildCharactersByGuildId.avoid_leadership == False,
+                GuildCharactersByGuildId.guild_id == guild_id
+            )
+        ).order_by(
+            GuildCharactersByGuildId.order_index
+        ).limit(1).offset(1)
+
+        row = await self.db.select_object(session, stmt)
+        return row
+
+    async def select_guild_applications_detail_by_guild_id(self, session, guild_id: int):
+        """Select guild application detail by guild id"""
         stmt = select(
             GuildApplicationsDetails
         ).where(
             GuildApplicationsDetails.guild_id == guild_id
+        ).order_by(
+            GuildApplicationsDetails.applied_on
+        ).limit(25)
+
+        rows = await self.db.select_objects(session, stmt)
+        return rows
+
+    async def select_guild_applications_detail_by_character_id(self, session, character_id: int):
+        """Select guild application detail by character id"""
+        stmt = select(
+            GuildApplicationsDetails
+        ).where(
+            GuildApplicationsDetails.character_id == character_id
         ).order_by(
             GuildApplicationsDetails.applied_on
         ).limit(25)
@@ -201,7 +322,6 @@ class GuildBuilder():
         )
 
         row = await self.db.select_object(session, stmt)
-        print("TEST: ", row)
         return row
 
     async def insert_guild_application(
@@ -330,6 +450,37 @@ class GuildBuilder():
                 GuildApplications
             ).where(
                 GuildApplications.id == application_id
+            )
+        )
+        await self.db.execute_raw(session, stmt)
+
+    async def delete_guild_applications(
+        self,
+        session,
+        character_id: int
+    ):
+        """Delete guild application by id."""
+        stmt = (
+            delete(
+                GuildApplications
+            ).where(
+                GuildApplications.character_id == character_id
+            )
+        )
+        await self.db.execute_raw(session, stmt)
+
+    async def delete_guild_character(
+        self,
+        session,
+        character_id: int
+    ):
+        """Delete guild application by id."""
+        stmt = (
+            delete(
+                GuildCharacters
+            )
+            .where(
+                GuildCharacters.character_id == character_id
             )
         )
         await self.db.execute_raw(session, stmt)

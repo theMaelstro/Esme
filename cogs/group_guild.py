@@ -1,6 +1,9 @@
+from typing import Optional, List
+
 import discord
 from discord.ext import commands
 from discord import app_commands
+from discord.app_commands import Choice
 
 from settings import CONFIG
 from core import BaseCog
@@ -8,8 +11,10 @@ from core import BaseCog
 from .partial_guild import (
     ApplicationList,
     ApplicationResolve,
+    GuildApply,
     GuildInvite,
-    MembersList
+    MembersList,
+    MemberExpel
 )
 
 class GuildCog(BaseCog):
@@ -90,6 +95,56 @@ class GuildCog(BaseCog):
         """Lists members of your guild."""
         partial_members = MembersList()
         await partial_members.guild_members(interaction)
+
+    async def guild_member_expel_name_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> List[Choice[str]]:
+        """Member expel member name autocomplete callback."""
+        partial_members_expel = MemberExpel()
+        return await partial_members_expel.guild_expel_autocomplete(interaction, current)
+
+    @group_members.command(name="expel")
+    @app_commands.checks.cooldown(
+        1,
+        CONFIG.commands.guild_members.cooldown,
+        key=lambda i: (i.guild_id, i.user.id)
+    )
+    @app_commands.autocomplete(character_name=guild_member_expel_name_autocomplete)
+    async def guild_members_expel(
+        self,
+        interaction: discord.Interaction,
+        character_name: str
+    ) -> None:
+        """Expel member from guild."""
+        partial_members_expel = MemberExpel()
+        await partial_members_expel.guild_expel(interaction, character_name)
+
+    async def guild_apply_name_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> List[Choice[str]]:
+        """Guild apply guild name autocomplete callback."""
+        partial_apply = GuildApply()
+        return await partial_apply.guild_apply_autocomplete(interaction, current)
+
+    @group_guild.command(name="apply")
+    @app_commands.checks.cooldown(
+        1,
+        CONFIG.commands.guild_members.cooldown,
+        key=lambda i: (i.guild_id, i.user.id)
+    )
+    @app_commands.autocomplete(guild_name=guild_apply_name_autocomplete)
+    async def guild_apply(
+        self,
+        interaction: discord.Interaction,
+        guild_name: str
+    ) -> None:
+        """Invite registered discord user to guild."""
+        partial_apply = GuildApply()
+        await partial_apply.guild_apply(interaction, guild_name)
 
     @group_guild.command(name="invite")
     @app_commands.checks.cooldown(

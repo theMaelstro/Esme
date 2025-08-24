@@ -51,6 +51,11 @@ class Discord:
     logs_channel_id: str
 
 @dataclasses.dataclass
+class Erupe:
+    """Class representing config erupe settings."""
+    clan_member_limits: list
+
+@dataclasses.dataclass
 class LiveChat:
     """Class representing config live chat settings"""
     chat_task: Toggle
@@ -97,6 +102,7 @@ class Config:
         self.config = configparser.ConfigParser()
         self.general: General
         self.discord: Discord
+        self.erupe: Erupe
         self.livechat: LiveChat
         self.database: Database
         self.commands: Commands
@@ -133,6 +139,9 @@ class Config:
                 "password": None,
                 "port": 5432,
                 "database": "erupe"
+            },
+            "Erupe": {
+                "clan_member_limits": [[0, 30], [3, 40], [7, 60], [10, 90]]
             },
             'Commands': {
                 'account_bind_credentials': {"enabled": True, "cooldown": 0.0},
@@ -198,6 +207,10 @@ class Config:
                 my_json['Discord']['status_category_id'],
                 my_json['Discord']['live_chat_category_id'],
                 my_json['Discord']['logs_channel_id']
+            )
+
+            self.erupe = Erupe(
+                my_json['Erupe']['clan_member_limits']
             )
 
             self.livechat = LiveChat(

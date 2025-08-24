@@ -66,6 +66,7 @@ async def m_set_psn(
 
             # Commit
             await session.commit()
+            await session.close()
 
         except (
             DiscordNotRegistered,
@@ -93,10 +94,6 @@ async def m_set_psn(
                 ),
                 ephemeral=True
             )
-
-        finally:
-            # Close Session
-            await session.close()
 
 class ModalPsn(
     discord.ui.Modal,

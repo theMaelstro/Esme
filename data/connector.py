@@ -19,7 +19,8 @@ from data.mappings import (
     Discord,
     CharacterDetails,
     GuildCharactersByGuildId,
-    GuildApplicationsDetails
+    GuildApplicationsDetails,
+    GuildRecruitmentDetails
 )
 
 class Connector:
@@ -42,7 +43,7 @@ class Connector:
             )
 
             # Create engine.
-            self.engine = create_async_engine(self.url_object, echo=False, hide_parameters=True)
+            self.engine = create_async_engine(self.url_object, echo=False, hide_parameters=False)
 
             # Connect to database
             async with self.engine.begin() as conn:
@@ -61,6 +62,12 @@ class Connector:
                 # Attempt to create Guild Applications View.
                 await conn.execute(text(GuildApplicationsDetails.__query__))
                 logging.info("Guild Applications View prepared.")
+                await conn.commit()
+
+            async with self.engine.begin() as conn:
+                # Attempt to create Guild Recruitment Details View.
+                await conn.execute(text(GuildRecruitmentDetails.__query__))
+                logging.info("Guild Recruitment Details View prepared.")
                 await conn.commit()
 
             async with self.engine.begin() as conn:

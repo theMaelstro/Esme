@@ -84,6 +84,7 @@ async def m_bind_credentials(
                 )
             # Commit
             await session.commit()
+            await session.close()
 
         except (
             UsernameIncorrect,
@@ -122,10 +123,6 @@ async def m_bind_credentials(
                 ),
                 ephemeral=True
             )
-
-        finally:
-            # Close Session
-            await session.close()
 
 class ModalBindCredentials(
     discord.ui.Modal,
