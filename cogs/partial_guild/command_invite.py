@@ -16,9 +16,11 @@ from core.exceptions import (
     CharacterNotSet,
     CharacterPendingInvite,
     CharacterAlreadyInGuild,
+    GuildFull,
     DiscordNotRegistered,
     MissingPermissions
 )
+from core import max_members
 
 class GuildInvite():
     """Holder for members list command."""
@@ -79,6 +81,16 @@ class GuildInvite():
                 if str(interaction.user.id) not in discord_ids:
                     raise MissingPermissions(
                         "You are not elevated guild member."
+                    )
+
+                guild = await self.guild_builder.select_recruiting_guild_by_id(
+                    session,
+                    sender_character.guild_id
+                )
+
+                if guild.members >= max_members(guild.guild_rp):
+                    raise GuildFull(
+                        "Guild is full and cannot accept new members."
                     )
 
                 # Get recipient character.
@@ -148,6 +160,7 @@ class GuildInvite():
             DiscordNotRegistered,
             CharacterNotSet,
             CharacterAlreadyInGuild,
+            GuildFull,
             MissingPermissions
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)

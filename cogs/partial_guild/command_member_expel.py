@@ -19,21 +19,24 @@ from core.exceptions import (
     CharacterNameInvalid,
     CharacterNotInGuild,
     CharacterNotSet,
-    CharacterAlreadyInGuild,
     DiscordNotRegistered,
-    GuildAlreadyApplied,
-    GuildFull,
-    GuildNameInvalid,
     GuildLeaderCandidateMissing,
     MissingPermissions
 )
 
 def validate_character(name: str):
     """Check if character is in cached list."""
-    for _, character in cache.guild_character_details.items():
+    for character in cache.guild_character_details:
         if name == character.character_name:
             return character.character_id
     return False
+
+def get_cache_character(discord_id: str):
+    """Get character from cache."""
+    for character in cache.guild_character_details:
+        if character.discord_id == discord_id and character.character_id == character.selected:
+            return character
+    return None
 
 class MemberExpel():
     """Cog handling expelling guild members."""
@@ -141,6 +144,14 @@ class MemberExpel():
                         )
 
                     else:
+                        if not await self.guild_builder.select_guild_character_details_by_character_id(
+                            session,
+                            character_id
+                        ):
+                            raise CharacterNotInGuild(
+                                "Character cannot be expelled. Not member of guild."
+                            )
+
                         await self.guild_builder.delete_guild_character(
                             session,
                             discord_user.character_id
@@ -187,11 +198,13 @@ class MemberExpel():
                 )
 
         except (
+            CharacterNotInGuild,
             CharacterNotSet,
             DiscordNotRegistered,
             CharacterNotInGuild,
             CharacterNameInvalid,
-            MissingPermissions
+            MissingPermissions,
+            GuildLeaderCandidateMissing
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
@@ -223,26 +236,25 @@ class MemberExpel():
     ) -> List[Choice[str]]:
         """Autocomplete callback function."""
         try:
-            guild = cache.guild_character_details.get(str(interaction.user.id), None)
-            if guild:
+            character = get_cache_character(str(interaction.user.id))
+            if character:
                 if len(current) > 0:
-                    if guild.order_index == 1:
+                    if character.order_index == 1:
                         return [
                             Choice(
                                 name=f"{str(value.order_index).zfill(2)} | {value.character_name}",
                                 value=value.character_name
-                            ) for _, value in cache.guild_character_details.items()
+                            ) for value in cache.guild_character_details
                             if current.lower() in value.character_name.lower()
-                            and value.guild_id == guild.guild_id
+                            and value.guild_id == character.guild_id
                         ][:10]
-                    else:
-                        return [
-                            Choice(
-                                name=f"{str(value.order_index).zfill(2)} | {value.character_name}",
-                                value=value.character_name
-                            ) for _, value in cache.guild_character_details.items()
-                            if guild.character_name == value.character_name
-                        ][:10]
+                    return [
+                        Choice(
+                            name=f"{str(value.order_index).zfill(2)} | {value.character_name}",
+                            value=value.character_name
+                        ) for value in cache.guild_character_details
+                        if character.character_name == value.character_name
+                    ][:10]
                 return [
                     Choice(
                         name="Start typing to find members...",

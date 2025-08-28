@@ -2,11 +2,8 @@
 import logging
 
 import discord
-from discord.ext import commands
-from discord import app_commands
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from settings import CONFIG
 from data.connector import CONN
 from data import UserBuilder, DiscordBuilder
 from core.exceptions import (
@@ -14,7 +11,6 @@ from core.exceptions import (
     UsernameIncorrect,
     UnmatchingPasswords
 )
-from core import BaseCog
 from core.crypto import check_password
 
 async def m_bind_credentials(

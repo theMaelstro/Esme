@@ -3,11 +3,8 @@ import re
 import logging
 
 import discord
-from discord.ext import commands
-from discord import app_commands
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from settings import CONFIG
 from data.connector import CONN
 from data import CharactersBuilder
 from data import DiscordBuilder
@@ -17,7 +14,6 @@ from core.exceptions import (
     CoroutineFailed,
     DiscordNotRegistered
 )
-from core import BaseCog
 
 class CharacterSelect():
     def __init__(self):

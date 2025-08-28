@@ -12,13 +12,17 @@ from data.cache import (
     GuildRecruitment,
     GuildCharacterDetails
 )
-from data import GuildBuilder
+from data import (
+    CharactersBuilder,
+    GuildBuilder
+)
 
 class CacheUpdate(BaseCog):
     """Cog handling calculation of key flag."""
     def __init__(self, client: commands.Bot):
         self.client = client
         self.guild_builder = GuildBuilder()
+        self.characters_builder = CharactersBuilder()
 
     @tasks.loop(minutes=5)
     async def update_cache(self):
@@ -29,7 +33,7 @@ class CacheUpdate(BaseCog):
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
                 guilds = await self.guild_builder.select_recruiting_guilds(session)
-                guild_character_details = await self.guild_builder.select_guild_character_details(session)
+                guild_character_details = await self.characters_builder.select_characters_in_guild_details(session)
 
                 # Close Session
                 await session.commit()
@@ -42,18 +46,16 @@ class CacheUpdate(BaseCog):
                         guild.members
                     ) for guild in guilds
                 ]
-                cache.guild_character_details = {
-                    (
-                        detail.discord_id
-                        if detail.discord_id
-                        else str(index)
-                    ): GuildCharacterDetails(
+                cache.guild_character_details = [
+                    GuildCharacterDetails(
                         detail.guild_id,
+                        detail.discord_id,
                         detail.character_id,
                         detail.character_name,
-                        detail.order_index
-                    ) for index, detail in enumerate(guild_character_details)
-                }
+                        detail.order_index,
+                        detail.cid
+                    ) for detail in guild_character_details
+                ]
 
     @commands.Cog.listener()
     async def on_ready(self):

@@ -114,9 +114,11 @@ class AsyncListener(BaseCog):
                 value=f"<t:{round(guild_application.applied_on)}:f>",
                 inline=False
             )
+            content = ""
             # Add management fields if application is received.
             if payload['application_type'] == 'applied':
                 if discord_ids:
+                    content+=f"{''.join(f'<@{str(i)}>' for i in discord_ids)}"
                     # Users responsible for action
                     embed.add_field(
                         name="Guild Recruiters",
@@ -144,7 +146,10 @@ class AsyncListener(BaseCog):
             embed.set_footer(
                 text=f"Requested by {re.escape(guild_application.actor_name)}"
             )
-            await channel.send(embed=embed)
+            await channel.send(
+                content=content,
+                embed=embed
+            )
 
         except (
             SettingNotConfigured

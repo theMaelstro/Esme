@@ -8,8 +8,9 @@ from core import BaseCog
 from .partial_account import (
     BindCredentials,
     BindToken,
-    CharacterSelect,
     Card,
+    CharacterCreate,
+    CharacterSelect,
     PsnClear,
     PsnSet,
     TokenReset
@@ -137,6 +138,17 @@ class AccountCog(BaseCog):
         partial_character_select = CharacterSelect()
         await partial_character_select.character_select(interaction)
 
+    @group_character.command(name="create")
+    @app_commands.checks.cooldown(
+        1,
+        CONFIG.commands.character_select.cooldown,
+        key=lambda i: (i.guild_id, i.user.id)
+    )
+    async def account_character_create(self, interaction: discord.Interaction) -> None:
+        """Create new character."""
+        partial_character_create = CharacterCreate()
+        await partial_character_create.character_create(interaction)
+
     @account_card.error
     @account_psn_clear.error
     @account_psn_set.error
@@ -144,6 +156,7 @@ class AccountCog(BaseCog):
     @account_bind_credentials.error
     @account_bind_token.error
     @account_character_select.error
+    @account_character_create.error
     async def on_account_error(
         self,
         interaction: discord.Interaction,

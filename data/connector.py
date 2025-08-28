@@ -43,7 +43,7 @@ class Connector:
             )
 
             # Create engine.
-            self.engine = create_async_engine(self.url_object, echo=False, hide_parameters=False)
+            self.engine = create_async_engine(self.url_object, echo=False, hide_parameters=True)
 
             # Connect to database
             async with self.engine.begin() as conn:

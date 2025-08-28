@@ -36,20 +36,30 @@ def get_app_type(
         return True
     return False
 
-def get_option_data(options_list, match):
-    for element in options_list:
-        if str(element.value) == str(match):
-            return {
-                "value": element.value,
-                "label": element.label,
-                "type": element.description
-            }
-    return None
+def get_option_data(options_list):
+    return {
+        element.value: {
+            "label": element.label,
+            "type": element.description
+        } for element in options_list
+    }
+
+def get_bulk_option_type(values: list, options, leader):
+    if leader:
+        for value in values:
+            if options[int(value)]['type'] == "invited":
+                return "invited"
+        return "applied"
+    for value in values:
+        if options[int(value)]['type'] == "applied":
+            return "applied"
+    return "invited"
 
 class DynamicApplicationView(discord.ui.View):
     def __init__(
             self,
             option_data: dict,
+            choices: list,
             user_is_leader: bool,
             *,
             timeout = 180,
@@ -57,9 +67,8 @@ class DynamicApplicationView(discord.ui.View):
         super().__init__(timeout=timeout)
         self.discord_builder = DiscordBuilder()
         self.guild_builder = GuildBuilder()
-        self.application_id = option_data["value"]
-        self.application_character = option_data["label"]
-        self.application_type = option_data["type"]
+        self.option_data = option_data
+        self.choices = choices
         self.user_is_leader=user_is_leader
         self.update_buttons()
 
@@ -69,40 +78,47 @@ class DynamicApplicationView(discord.ui.View):
             # Start session
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
-                guild_application = await self.guild_builder.select_guild_application_by_id(
-                    session,
-                    self.application_id
-                )
-                if not guild_application:
-                    raise(
-                        CoroutineFailed(
-                            "Applictaion does not exist."
+                if get_bulk_option_type(self.choices, self.option_data, False) == 'invited':
+                    self.choices = self.choices[:1]
+
+                description = ""
+                for choice in self.choices:
+                    description += f"`{self.option_data[int(choice)]["label"]}`\n"
+
+                    guild_application = await self.guild_builder.select_guild_application_by_id(
+                        session,
+                        int(choice)
+                    )
+                    if not guild_application:
+                        raise(
+                            CoroutineFailed(
+                                "Application does not exist."
+                            )
                         )
-                    )
 
-                guild = await self.guild_builder.select_recruiting_guild_by_id(
-                    session,
-                    guild_application.guild_id
-                )
-                if guild.members >= max_members(guild.guild_rp):
-                    raise GuildFull(
-                        "Guild is full and cannot accept new members."
+                    guild = await self.guild_builder.select_recruiting_guild_by_id(
+                        session,
+                        guild_application.guild_id
                     )
+                    if guild.members >= max_members(guild.guild_rp):
+                        raise GuildFull(
+                            "Guild is full and cannot accept new members."
+                        )
 
-                await self.guild_builder.insert_guild_member(
-                    session,
-                    guild_application.guild_id,
-                    guild_application.character_id
-                )
-                await self.guild_builder.delete_guild_applications(
-                    session,
-                    guild_application.character_id
-                )
+                    await self.guild_builder.insert_guild_member(
+                        session,
+                        guild_application.guild_id,
+                        guild_application.character_id
+                    )
+                    await self.guild_builder.delete_all_character_guild_applications(
+                        session,
+                        guild_application.character_id
+                    )
 
                 await interaction.response.edit_message(
                     embed=discord.Embed(
-                        title="Application Accepted",
-                        description=f"{self.application_character} application accepted.",
+                        title="Applications Accepted",
+                        description=description,
                         color=discord.Color.green()
                     ),
                     view=None
@@ -119,7 +135,7 @@ class DynamicApplicationView(discord.ui.View):
                 embed=discord.Embed(
                     title="Application Process Failed",
                     description="Guild is full and cannot accept more members.",
-                    color=discord.Color.blue()
+                    color=discord.Color.red()
                 ),
                 ephemeral=True
             )
@@ -142,15 +158,18 @@ class DynamicApplicationView(discord.ui.View):
             # Start session
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
-                await self.guild_builder.delete_guild_application(
+                await self.guild_builder.delete_bulk_guild_application(
                     session,
-                    self.application_id
+                    self.choices
                 )
+                description = ""
+                for choice in self.choices:
+                    description += f"`{self.option_data[int(choice)]['label']}`\n"
 
                 await interaction.response.edit_message(
                     embed=discord.Embed(
-                        title="Application Rejected",
-                        description=f"{self.application_character} application cancelled.",
+                        title="Applications Rejected",
+                        description=description,
                         color=discord.Color.red()
                     ),
                     view=None
@@ -185,7 +204,8 @@ class DynamicApplicationView(discord.ui.View):
         )
 
     def update_buttons(self):
-        if self.application_type == "applied":
+        application_type = get_bulk_option_type(self.choices, self.option_data, self.user_is_leader)
+        if application_type == "applied":
             self.children[0].disabled = not self.user_is_leader
         else:
             self.children[0].disabled = self.user_is_leader
@@ -198,21 +218,29 @@ class DynamicSelect(discord.ui.Select):
         ) -> None:
         super().__init__(
             placeholder="Select an option",
-            max_values=1,
+            max_values=len(options),
             min_values=1,
             options=options
         )
         self.user_is_leader = user_is_leader
 
     async def callback(self, interaction: discord.Interaction):
-        data = get_option_data(self.options, self.values[0])
+        data = get_option_data(self.options)
+        values = self.values
+        if get_bulk_option_type(self.values, data, False) == 'invited':
+            values = self.values[:1]
+
+        rows = ""
+        for row in values:
+            rows=rows+f"`{data[int(row)]["label"]}`\n"
+
         await interaction.response.edit_message(
             embed=discord.Embed(
-                title=data["label"],
-                description="Please resolve application.",
+                title="Resolve Applications",
+                description=rows,
                 color=discord.Color.blue()
             ),
-            view=DynamicApplicationView(data, self.user_is_leader)
+            view=DynamicApplicationView(data, values, self.user_is_leader)
         )
 
 class DynamicSelectView(discord.ui.View):
@@ -292,7 +320,7 @@ class ApplicationList():
                         raise MissingGuildApplications(
                             "No Guild Applications found."
                         )
-                
+
                 else:
                     self.user_is_leader = False
                     guild_applications = await self.guild_builder.select_guild_applications_detail_by_character_id(

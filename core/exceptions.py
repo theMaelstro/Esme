@@ -81,6 +81,9 @@ class GuildLeaderCandidateMissing(Exception):
 class SettingNotConfigured(Exception):
     """Setting not configured in json file."""
 
+class CharacterExists(Exception):
+    """Character already exists."""
+
 class CharacterNotInGuild(Exception):
     """Character is not a Guild member."""
 
@@ -95,6 +98,12 @@ class CharacterPendingInvite(Exception):
 
 class CharacterNameInvalid(Exception):
     """Character Name is invalid."""
+
+class CharactersAreEqual(Exception):
+    """Characters cannot be swapped."""
+
+class CharacterIsLeader(Exception):
+    """Character is guild leader and cannot be swapped."""
 
 class MissingGuildApplications(Exception):
     """No Guild Applications found."""

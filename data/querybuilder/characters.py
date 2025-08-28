@@ -1,5 +1,12 @@
 """Query Builder module for Characters related queries."""
-from sqlalchemy import select, update
+from datetime import datetime, timezone
+
+from sqlalchemy import (
+    Sequence,
+    select,
+    and_,
+    insert
+)
 from sqlalchemy.orm import load_only
 
 from data.connector import CONN
@@ -15,6 +22,23 @@ class CharactersBuilder():
     """Query builder class for Characters table."""
     def __init__(self) -> None:
         self.db = CONN
+
+    async def create_character(self, session, user_id: int):
+        """Create blank character"""
+        stmt = insert(
+            Characters
+        ).values(
+            user_id=user_id,
+            is_female=False,
+            is_new_character=True,
+            name='',
+            unk_desc_string='',
+            hr=0,
+            gr=0,
+            weapon_type=0,
+            last_login=datetime.now(timezone.utc).timestamp()
+        )
+        return await self.db.select_objects(session, stmt)
 
     async def select_characters_by_user_id(self, session, user_id: int):
         """Select characters by user id"""
@@ -35,7 +59,10 @@ class CharactersBuilder():
             )
 
         ).where(
-            Characters.user_id == user_id
+            and_(
+                Characters.user_id == user_id,
+                Characters.deleted == False
+            )
         ).order_by(
             Characters.id
         )
@@ -77,6 +104,20 @@ class CharactersBuilder():
         )
 
         rows = await self.db.select_object(session, stmt)
+        return rows
+
+    async def select_characters_in_guild_details(self, session):
+        """Select all character details"""
+        stmt = select(
+            CharacterDetails
+        ).where(
+            CharacterDetails.guild_id != None
+        ).order_by(
+            CharacterDetails.guild_id,
+            CharacterDetails.order_index
+        )
+
+        rows = await self.db.select_objects(session, stmt)
         return rows
 
     async def insert_message(

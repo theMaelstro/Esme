@@ -17,9 +17,6 @@ class GuildCharactersByGuildId(Base):
         guild_characters.id,
         guild_characters.guild_id,
         guilds.name AS guild_name,
-        users.id AS uid,
-        users.psn_id,
-        discord.discord_id as discord_id,
         characters.id AS character_id,
         characters.name AS character_name,
         characters.weapon_type,
@@ -44,10 +41,6 @@ class GuildCharactersByGuildId(Base):
         characters ON guild_characters.character_id = characters.id
     LEFT JOIN
         guilds ON guild_characters.guild_id = guilds.id
-    JOIN
-        users ON characters.user_id = users.id
-    LEFT JOIN
-        discord ON users.id = discord.user_id
     ORDER BY
         guild_characters.guild_id,
         guild_characters.order_index;
@@ -57,9 +50,6 @@ class GuildCharactersByGuildId(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     guild_id: Mapped[int]
     guild_name: Mapped[str] = mapped_column(VARCHAR(24))
-    uid: Mapped[int]
-    psn_id: Mapped[str]
-    discord_id: Mapped[str] = mapped_column(VARCHAR(21))
     character_id: Mapped[int]
     character_name: Mapped[str]
     weapon_type: Mapped[int] = mapped_column(nullable=True)

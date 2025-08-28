@@ -13,7 +13,7 @@ class CharacterDetails(Base):
 
     __query__ = """
     CREATE OR REPLACE VIEW character_details AS
-    SELECT
+    SELECT 
         characters.id AS character_id,
         characters.name AS character_name,
         characters.weapon_type,
@@ -27,21 +27,20 @@ class CharacterDetails(Base):
         characters.bonus_quests,
         characters.last_login,
         date_part('epoch'::text, characters.daily_time) AS daily_time,
-        g.guild_id AS guild_id,
+        g.guild_id,
         guilds.name AS guild_name,
+        g.order_index,
         date_part('epoch'::text, g.joined_at) AS joined_at_epoch,
         users.id AS uid,
-        users.psn_id
-    FROM
-        characters
-    LEFT JOIN
-        guild_characters as g ON characters.id = g.character_id
-    LEFT JOIN
-        guilds ON guilds.id = g.guild_id
-    INNER JOIN
-        users ON users.id = characters.user_id
-    ORDER BY
-    characters.id;
+        users.psn_id,
+        discord.discord_id,
+        discord.character_id as cid
+    FROM characters
+        LEFT JOIN guild_characters g ON characters.id = g.character_id
+        LEFT JOIN guilds ON guilds.id = g.guild_id
+        JOIN users ON users.id = characters.user_id
+        LEFT JOIN discord ON users.id = discord.user_id
+    ORDER BY characters.id;
     """
 
     __tablename__ = "character_details"
@@ -60,6 +59,9 @@ class CharacterDetails(Base):
     daily_time: Mapped[float]
     guild_id: Mapped[int]
     guild_name: Mapped[str] = mapped_column(VARCHAR(24))
+    order_index: Mapped[int]
     joined_at_epoch: Mapped[float]
     uid: Mapped[int]
     psn_id: Mapped[str]
+    discord_id: Mapped[str] = mapped_column(VARCHAR(21))
+    cid: Mapped[int]

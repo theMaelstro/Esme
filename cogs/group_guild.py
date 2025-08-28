@@ -14,7 +14,8 @@ from .partial_guild import (
     GuildApply,
     GuildInvite,
     MembersList,
-    MemberExpel
+    MemberExpel,
+    MemberSwap
 )
 
 class GuildCog(BaseCog):
@@ -121,6 +122,33 @@ class GuildCog(BaseCog):
         partial_members_expel = MemberExpel()
         await partial_members_expel.guild_expel(interaction, character_name)
 
+    async def guild_member_swap_name_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> List[Choice[str]]:
+        """Member swap member name autocomplete callback."""
+        partial_members_swap = MemberSwap()
+        return await partial_members_swap.guild_swap_autocomplete(interaction, current)
+
+    @group_members.command(name="swap")
+    @app_commands.checks.cooldown(
+        1,
+        CONFIG.commands.guild_members.cooldown,
+        key=lambda i: (i.guild_id, i.user.id)
+    )
+    @app_commands.autocomplete(character_name_1=guild_member_swap_name_autocomplete)
+    @app_commands.autocomplete(character_name_2=guild_member_swap_name_autocomplete)
+    async def guild_members_swap(
+        self,
+        interaction: discord.Interaction,
+        character_name_1: str,
+        character_name_2: str
+    ) -> None:
+        """Swap members in guild."""
+        partial_members_swap = MemberSwap()
+        await partial_members_swap.guild_swap(interaction, character_name_1, character_name_2)
+
     async def guild_apply_name_autocomplete(
         self,
         interaction: discord.Interaction,
@@ -167,10 +195,13 @@ class GuildCog(BaseCog):
         partial_invite = GuildInvite()
         await partial_invite.guild_invite(interaction, member)
 
+    @guild_apply.error
     @guild_application_list.error
     @guild_application_accept.error
     @guild_application_reject.error
     @guild_members_list.error
+    @guild_members_expel.error
+    @guild_members_swap.error
     @guild_invite.error
     async def on_guild_error(
         self,

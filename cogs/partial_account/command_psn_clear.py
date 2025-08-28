@@ -4,7 +4,6 @@ import logging
 import discord
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from settings import CONFIG
 from data.connector import CONN
 from data import UserBuilder, DiscordBuilder
 from core.exceptions import (
@@ -54,7 +53,7 @@ class PsnClear():
                 await session.close()
 
             except (
-
+                DiscordNotRegistered
             ) as e:
                 logging.warning("%s: %s", interaction.user.id, e)
                 await interaction.response.send_message(
@@ -78,13 +77,3 @@ class PsnClear():
                     ),
                     ephemeral=True
                 )
-
-    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
-        logging.error("%s: %s %s %s", interaction.user.id, type(error), error, error.__traceback__)
-        await interaction.response.send_message(
-            embed=discord.Embed(
-                title="Psn Clear Failed",
-                color=discord.Color.red()
-            ),
-            ephemeral=True
-        )

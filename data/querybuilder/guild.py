@@ -454,7 +454,22 @@ class GuildBuilder():
         )
         await self.db.execute_raw(session, stmt)
 
-    async def delete_guild_applications(
+    async def delete_bulk_guild_application(
+        self,
+        session,
+        application_ids: list
+    ):
+        """Bulk delete guild application by id list."""
+        stmt = (
+            delete(
+                GuildApplications
+            ).where(
+                GuildApplications.id.in_([int(id) for id in application_ids])
+            )
+        )
+        await self.db.execute_raw(session, stmt)
+
+    async def delete_all_character_guild_applications(
         self,
         session,
         character_id: int

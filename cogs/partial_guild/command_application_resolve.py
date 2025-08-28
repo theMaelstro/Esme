@@ -82,7 +82,7 @@ class ApplicationResolve():
                         guild_application.guild_id,
                         guild_application.character_id
                     )
-                    await self.guild_builder.delete_guild_applications(
+                    await self.guild_builder.delete_all_character_guild_applications(
                         session,
                         guild_application.character_id
                     )

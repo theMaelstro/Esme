@@ -22,20 +22,24 @@ class GuildCharacterDetails():
     def __init__(
         self,
         guild_id: int,
+        discord_id: str,
         character_id: int,
         character_name: str,
-        order_index: int
+        order_index: int,
+        selected: int
     ):
         self.guild_id: int = guild_id
+        self.discord_id: str = discord_id
         self.character_id: int = character_id
         self.character_name: str = character_name
         self.order_index: int = order_index
+        self.selected: int = selected
 
 class Cache():
     """Cache object."""
     def __init__(self) -> None:
         self._list_guilds: List[GuildRecruitment] = None
-        self._list_guild_character_details: dict[str, GuildCharacterDetails] = None
+        self._list_guild_character_details: list[GuildCharacterDetails] = None
 
     @property
     def guilds(self):
