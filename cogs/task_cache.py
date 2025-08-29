@@ -28,34 +28,34 @@ class CacheUpdate(BaseCog):
     async def update_cache(self):
         """Update Cache variables."""
         logging.info("Updating Cache: %s.", self.__cog_name__)
-        if not cache.guilds:
-            # Create session
-            async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-            async with async_session() as session:
-                guilds = await self.guild_builder.select_recruiting_guilds(session)
-                guild_character_details = await self.characters_builder.select_characters_in_guild_details(session)
+        # Create session
+        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+        async with async_session() as session:
+            guilds = await self.guild_builder.select_recruiting_guilds(session)
+            guild_character_details = await self.characters_builder.select_characters_in_guild_details(session)
 
-                # Close Session
-                await session.commit()
-                await session.close()
-                cache.guilds = [
-                    GuildRecruitment(
-                        guild.guild_id,
-                        guild.guild_name,
-                        guild.leader_name,
-                        guild.members
-                    ) for guild in guilds
-                ]
-                cache.guild_character_details = [
-                    GuildCharacterDetails(
-                        detail.guild_id,
-                        detail.discord_id,
-                        detail.character_id,
-                        detail.character_name,
-                        detail.order_index,
-                        detail.cid
-                    ) for detail in guild_character_details
-                ]
+            # Close Session
+            await session.commit()
+            await session.close()
+            cache.guilds = [
+                GuildRecruitment(
+                    guild.guild_id,
+                    guild.guild_name,
+                    guild.leader_name,
+                    guild.members
+                ) for guild in guilds
+            ]
+            cache.guild_character_details = [
+                GuildCharacterDetails(
+                    detail.guild_id,
+                    detail.discord_id,
+                    detail.character_id,
+                    detail.character_name,
+                    detail.order_index,
+                    detail.cid
+                ) for detail in guild_character_details
+            ]
+        logging.info("Cache Updated: %s.", self.__cog_name__)
 
     @commands.Cog.listener()
     async def on_ready(self):
