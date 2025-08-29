@@ -14,14 +14,11 @@ from data import (
     GuildBuilder
 )
 from core.view.pagination import Pagination
-from core import BaseCog
 from core.exceptions import (
     CoroutineFailed,
     DiscordNotRegistered,
-    InvalidArgument,
     MissingPermissions,
-    CharacterNotInGuild,
-    MissingGuildApplications
+    CharacterNotInGuild
 )
 
 class MembersList():
@@ -33,6 +30,14 @@ class MembersList():
     async def guild_members(self, interaction: discord.Interaction):
         """Show all guilds."""
         try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.guild_members_list.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+
             # Start session
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
@@ -123,13 +128,28 @@ class MembersList():
             await Pagination(interaction, get_page, public=False).navegate()
 
         except (
+            MissingPermissions,
+            DiscordNotRegistered,
+            CharacterNotInGuild
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Guild Members Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
+        except (
             CoroutineFailed
         ) as e:
             logging.error("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Guild Members Failed",
-                    description=e,
+                    description="Internal Error.",
                     color=discord.Color.red()
                 ),
                 ephemeral=True

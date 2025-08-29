@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List
 
 import discord
 from discord.ext import commands
@@ -26,13 +26,14 @@ class GuildCog(BaseCog):
             name='Guild Invite',
             callback = self.guild_invite_app,
         )
+        self.app_guild_invite.error(self.on_guild_error)
         self.client.tree.add_command(self.app_guild_invite)
 
     group_guild = app_commands.Group(
         name="guild",
         description="..."
     )
-    group_applications = app_commands.Group(
+    group_application = app_commands.Group(
         name="application",
         parent = group_guild,
         description="..."
@@ -43,10 +44,10 @@ class GuildCog(BaseCog):
         description="..."
     )
 
-    @group_applications.command(name="list")
+    @group_application.command(name="list")
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.guild_application.cooldown,
+        CONFIG.commands.guild_application_list.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     async def guild_application_list(self, interaction: discord.Interaction) -> None:
@@ -54,11 +55,11 @@ class GuildCog(BaseCog):
         partial_applications = ApplicationList()
         await partial_applications.guild_application(interaction)
 
-    @group_applications.command(name="accept")
+    @group_application.command(name="accept")
     @app_commands.rename(application_id='id')
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.guild_application.cooldown,
+        CONFIG.commands.guild_application_resolve.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     async def guild_application_accept(
@@ -70,11 +71,11 @@ class GuildCog(BaseCog):
         partial_applications = ApplicationResolve()
         await partial_applications.guild_application(interaction, application_id, True)
 
-    @group_applications.command(name="reject")
+    @group_application.command(name="reject")
     @app_commands.rename(application_id='id')
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.guild_application.cooldown,
+        CONFIG.commands.guild_application_resolve.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     async def guild_application_reject(
@@ -89,7 +90,7 @@ class GuildCog(BaseCog):
     @group_members.command(name="list")
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.guild_members.cooldown,
+        CONFIG.commands.guild_members_list.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     async def guild_members_list(self, interaction: discord.Interaction) -> None:
@@ -109,7 +110,7 @@ class GuildCog(BaseCog):
     @group_members.command(name="expel")
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.guild_members.cooldown,
+        CONFIG.commands.guild_members_expel.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     @app_commands.autocomplete(character_name=guild_member_expel_name_autocomplete)
@@ -134,7 +135,7 @@ class GuildCog(BaseCog):
     @group_members.command(name="swap")
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.guild_members.cooldown,
+        CONFIG.commands.guild_members_swap.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     @app_commands.autocomplete(character_name_1=guild_member_swap_name_autocomplete)
@@ -161,7 +162,7 @@ class GuildCog(BaseCog):
     @group_guild.command(name="apply")
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.guild_members.cooldown,
+        CONFIG.commands.guild_apply.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     @app_commands.autocomplete(guild_name=guild_apply_name_autocomplete)
@@ -177,7 +178,7 @@ class GuildCog(BaseCog):
     @group_guild.command(name="invite")
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.guild_members.cooldown,
+        CONFIG.commands.guild_invite.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     async def guild_invite(self, interaction: discord.Interaction, member: discord.Member) -> None:
@@ -186,6 +187,11 @@ class GuildCog(BaseCog):
         await partial_invite.guild_invite(interaction, member)
 
     # Guild Invite Application Command
+    @app_commands.checks.cooldown(
+        1,
+        CONFIG.commands.guild_invite.cooldown,
+        key=lambda i: (i.guild_id, i.user.id)
+    )
     async def guild_invite_app(
             self,
             interaction: discord.Interaction,
@@ -213,5 +219,5 @@ class GuildCog(BaseCog):
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
-    if CONFIG.commands.guild_set_leader.enabled:
+    if CONFIG.features.cogs_groups.group_guild.enabled:
         await client.add_cog(GuildCog(client))

@@ -105,5 +105,8 @@ class CharactersAreEqual(Exception):
 class CharacterIsLeader(Exception):
     """Character is guild leader and cannot be swapped."""
 
+class UsersAreEqual(Exception):
+    """Users are equal."""
+
 class MissingGuildApplications(Exception):
     """No Guild Applications found."""

@@ -14,14 +14,16 @@ from data import (
     DiscordBuilder,
     GuildBuilder
 )
+
+from settings import CONFIG
 from core.exceptions import (
-    CoroutineFailed,
-    CharacterNotSet,
     CharacterAlreadyInGuild,
+    CharacterNotSet,
     DiscordNotRegistered,
     GuildAlreadyApplied,
     GuildFull,
-    GuildNameInvalid
+    GuildNameInvalid,
+    MissingPermissions
 )
 from core import max_members
 
@@ -46,6 +48,14 @@ class GuildApply():
     ):
         """Show all guilds."""
         try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.guild_apply.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+
             guild_id = validate_guild(guild_name)
             if not guild_id:
                 raise GuildNameInvalid(
@@ -117,12 +127,13 @@ class GuildApply():
             )
 
         except (
-            DiscordNotRegistered,
-            CharacterNotSet,
             CharacterAlreadyInGuild,
+            CharacterNotSet,
+            DiscordNotRegistered,
             GuildAlreadyApplied,
             GuildFull,
-            GuildNameInvalid
+            GuildNameInvalid,
+            MissingPermissions
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
@@ -158,25 +169,13 @@ class GuildApply():
             ][:10]
 
         except (
-            CoroutineFailed
-        ) as e:
-            logging.error("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Guild List Failed",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
-
-        except (
             Exception
         ) as e:
             logging.error("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Guild List Failed",
+                    description="Internal Error",
                     color=discord.Color.red()
                 ),
                 ephemeral=True

@@ -44,12 +44,11 @@ class AsyncListener(BaseCog):
                     "Logs channel not configured."
                 )
             embed=discord.Embed(
-                    title="New User Appeared",
+                    title="New User Registered",
                     description=(
-                        "# Wee Hee Hoo Hoo!\n"
                         f"**Row ID**: `{notification.payload}`"
                     ),
-                    color=discord.Color.green()
+                    color=discord.Color.blue()
                 )
             await channel.send(embed=embed)
 

@@ -2,8 +2,6 @@
 import logging
 
 import discord
-from discord.ext import commands
-from discord import app_commands
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from settings import CONFIG
@@ -12,9 +10,9 @@ from data import UserBuilder, DiscordBuilder
 from core.exceptions import (
     CoroutineFailed,
     DiscordNotRegistered,
+    MissingPermissions,
     PsnIDAlreadyRegistered
 )
-from core import BaseCog
 
 async def m_set_psn(
     interaction: discord.Interaction,
@@ -23,10 +21,10 @@ async def m_set_psn(
     psn_name: str
 ):
     """Update user bound psn id."""
-    # Create session
-    async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-    async with async_session() as session:
-        try:
+    try:
+        # Create session
+        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+        async with async_session() as session:
             # Check if user is registered.
             discord_user = await discord_builder.select_discord_user(
                 session, str(interaction.user.id)
@@ -68,32 +66,32 @@ async def m_set_psn(
             await session.commit()
             await session.close()
 
-        except (
-            DiscordNotRegistered,
-            PsnIDAlreadyRegistered
-        ) as e:
-            logging.warning("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Psn ID update failed.",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
+    except (
+        DiscordNotRegistered,
+        PsnIDAlreadyRegistered
+    ) as e:
+        logging.warning("%s: %s", interaction.user.id, e)
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                title="Psn ID update failed.",
+                description=e,
+                color=discord.Color.red()
+            ),
+            ephemeral=True
+        )
 
-        except (
-            CoroutineFailed
-        ) as e:
-            logging.error("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Psn ID update failed.",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
+    except (
+        CoroutineFailed
+    ) as e:
+        logging.error("%s: %s", interaction.user.id, e)
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                title="Psn ID update failed.",
+                description="Internal Error.",
+                color=discord.Color.red()
+            ),
+            ephemeral=True
+        )
 
 class ModalPsn(
     discord.ui.Modal,
@@ -142,6 +140,28 @@ class PsnSet():
         interaction: discord.Interaction
     ):
         """Update user bound psn id."""
-        await interaction.response.send_modal(
-            ModalPsn(self.user_builder, self.discord_builder)
-        )
+        try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.account_set_psn.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+
+            await interaction.response.send_modal(
+                ModalPsn(self.user_builder, self.discord_builder)
+            )
+
+        except (
+            MissingPermissions
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Psn Set Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )

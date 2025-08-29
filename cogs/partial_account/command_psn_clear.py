@@ -6,9 +6,12 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from data.connector import CONN
 from data import UserBuilder, DiscordBuilder
+
+from settings import CONFIG
 from core.exceptions import (
     CoroutineFailed,
-    DiscordNotRegistered
+    DiscordNotRegistered,
+    MissingPermissions
 )
 
 class PsnClear():
@@ -19,10 +22,18 @@ class PsnClear():
 
     async def psn_clear(self, interaction: discord.Interaction):
         """Reset account psn."""
-        # Create session
-        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-        async with async_session() as session:
-            try:
+        try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.account_psn_clear.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+
+            # Create session
+            async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+            async with async_session() as session:
                 # Check if user is registered.
                 discord_user = await self.discord_builder.select_discord_user(
                     session, str(interaction.user.id)
@@ -52,28 +63,29 @@ class PsnClear():
                 await session.commit()
                 await session.close()
 
-            except (
-                DiscordNotRegistered
-            ) as e:
-                logging.warning("%s: %s", interaction.user.id, e)
-                await interaction.response.send_message(
-                    embed=discord.Embed(
-                        title="Psn Clear Failed",
-                        description=e,
-                        color=discord.Color.red()
-                    ),
-                    ephemeral=True
-                )
+        except (
+            DiscordNotRegistered,
+            MissingPermissions
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Psn Clear Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
 
-            except (
-                CoroutineFailed
-            ) as e:
-                logging.error("%s: %s", interaction.user.id, e)
-                await interaction.response.send_message(
-                    embed=discord.Embed(
-                        title="Psn Clear Failed",
-                        description=e,
-                        color=discord.Color.red()
-                    ),
-                    ephemeral=True
-                )
+        except (
+            CoroutineFailed
+        ) as e:
+            logging.error("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Psn Clear Failed",
+                    description="Internal Error.",
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )

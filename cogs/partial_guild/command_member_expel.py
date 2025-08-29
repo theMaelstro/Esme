@@ -14,6 +14,8 @@ from data import (
     DiscordBuilder,
     GuildBuilder
 )
+
+from settings import CONFIG
 from core.exceptions import (
     CoroutineFailed,
     CharacterNameInvalid,
@@ -52,6 +54,14 @@ class MemberExpel():
     ):
         """Expel guild member."""
         try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.guild_members_expel.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+
             character_id = validate_character(character_name)
             if not character_id:
                 raise CharacterNameInvalid(
@@ -198,13 +208,13 @@ class MemberExpel():
                 )
 
         except (
+            CharacterNameInvalid,
+            CharacterNotInGuild,
             CharacterNotInGuild,
             CharacterNotSet,
             DiscordNotRegistered,
-            CharacterNotInGuild,
-            CharacterNameInvalid,
-            MissingPermissions,
-            GuildLeaderCandidateMissing
+            GuildLeaderCandidateMissing,
+            MissingPermissions
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
@@ -223,7 +233,7 @@ class MemberExpel():
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Guild Expel Failed",
-                    description=e,
+                    description="Internal Error",
                     color=discord.Color.red()
                 ),
                 ephemeral=True
@@ -275,7 +285,7 @@ class MemberExpel():
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Guild Expel Failed",
-                    description=e,
+                    description="Internal Error",
                     color=discord.Color.red()
                 ),
                 ephemeral=True

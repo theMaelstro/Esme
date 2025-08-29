@@ -23,7 +23,10 @@ class BotManagement(BaseCog):
     async def sync_commands(self, ctx, arg: discord.Guild, clear: Optional[bool] = False) -> None:
         """Sync commands for specified guild."""
         try:
-            if ctx.author.id not in CONFIG.discord.admin_user_ids:
+            if not CONFIG.check_permission(
+                0,
+                ctx.author
+            ):
                 raise MissingPermissions(
                     f"{ctx.author.mention} is missing permissions."
                 )
@@ -94,7 +97,10 @@ class BotManagement(BaseCog):
     async def sync(self, ctx, clear: Optional[bool] = False) -> None:
         """Sync commands globally."""
         try:
-            if ctx.author.id not in CONFIG.discord.admin_user_ids:
+            if not CONFIG.check_permission(
+                0,
+                ctx.author
+            ):
                 raise MissingPermissions(
                     f"{ctx.author.mention} is missing permissions."
                 )
@@ -130,7 +136,10 @@ class BotManagement(BaseCog):
     async def reload_cogs(self, ctx) -> None:
         """Reloads Cogs."""
         try:
-            if ctx.author.id not in CONFIG.discord.admin_user_ids:
+            if not CONFIG.check_permission(
+                0,
+                ctx.author
+            ):
                 raise MissingPermissions(
                     f"{ctx.author.mention} is missing permissions."
                 )
@@ -170,12 +179,14 @@ class BotManagement(BaseCog):
     async def reload_config(self, ctx):
         """Reload config file."""
         try:
-            if ctx.author.id not in CONFIG.discord.admin_user_ids:
+            if not CONFIG.check_permission(
+                0,
+                ctx.author
+            ):
                 raise MissingPermissions(
                     f"{ctx.author.mention} is missing permissions."
                 )
-
-            await CONFIG.init_config()
+            CONFIG.init_config()
             await ctx.send(
                 embed=discord.Embed(
                     title="Config Reloaded",

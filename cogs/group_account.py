@@ -22,8 +22,9 @@ class AccountCog(BaseCog):
         self.client = client
         self.app_card = app_commands.ContextMenu(
             name='Player Card',
-            callback = self.card_app,
+            callback = self.account_card_app,
         )
+        self.app_card.error(self.on_account_error)
         self.client.tree.add_command(self.app_card)
 
     group_account = app_commands.Group(
@@ -63,7 +64,12 @@ class AccountCog(BaseCog):
         await partial_card.card(interaction, None)
 
     # Card Application Command
-    async def card_app(
+    @app_commands.checks.cooldown(
+        1,
+        CONFIG.commands.account_card.cooldown,
+        key=lambda i: (i.guild_id, i.user.id)
+    )
+    async def account_card_app(
             self,
             interaction: discord.Interaction,
             member: discord.Member
@@ -130,7 +136,7 @@ class AccountCog(BaseCog):
     @group_character.command(name="select")
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.character_select.cooldown,
+        CONFIG.commands.account_character_select.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     async def account_character_select(self, interaction: discord.Interaction) -> None:
@@ -141,7 +147,7 @@ class AccountCog(BaseCog):
     @group_character.command(name="create")
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.character_select.cooldown,
+        CONFIG.commands.account_character_create.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     async def account_character_create(self, interaction: discord.Interaction) -> None:
@@ -149,14 +155,14 @@ class AccountCog(BaseCog):
         partial_character_create = CharacterCreate()
         await partial_character_create.character_create(interaction)
 
+    @account_bind_credentials.error
+    @account_bind_token.error
     @account_card.error
+    @account_character_create.error
+    @account_character_select.error
     @account_psn_clear.error
     @account_psn_set.error
     @account_token_reset.error
-    @account_bind_credentials.error
-    @account_bind_token.error
-    @account_character_select.error
-    @account_character_create.error
     async def on_account_error(
         self,
         interaction: discord.Interaction,
@@ -167,5 +173,5 @@ class AccountCog(BaseCog):
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
-    if CONFIG.commands.guild_set_leader.enabled:
+    if CONFIG.features.cogs_groups.group_account.enabled:
         await client.add_cog(AccountCog(client))

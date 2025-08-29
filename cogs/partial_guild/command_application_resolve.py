@@ -1,20 +1,17 @@
 """Extension module for GuildApplication Cog."""
 import logging
-from typing import Literal
 
 import discord
-from discord.ext import commands
-from discord import app_commands
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from settings import CONFIG
 from data.connector import CONN
 from data import (
     DiscordBuilder,
     GuildBuilder
 )
+
+from settings import CONFIG
 from core.exceptions import (
-    CoroutineFailed,
     DiscordNotRegistered,
     GuildFull,
     InvalidArgument,
@@ -36,6 +33,14 @@ class ApplicationResolve():
     ):
         """Manage guild application by id."""
         try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.guild_application_resolve.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+
             # Start session
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
@@ -116,35 +121,12 @@ class ApplicationResolve():
                 await session.close()
 
         except (
-            GuildFull
-        ) as e:
-            logging.info("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Application Process Failed",
-                    description="Guild is full. Expel some members.",
-                    color=discord.Color.blue()
-                ),
-                ephemeral=True
-            )
-        except (
             DiscordNotRegistered,
+            GuildFull,
             InvalidArgument,
             MissingPermissions
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Application Process Failed",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
-        except (
-            CoroutineFailed
-        ) as e:
-            logging.error("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Application Process Failed",

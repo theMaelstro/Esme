@@ -9,14 +9,17 @@ from data import (
     CharactersBuilder,
     DiscordBuilder
 )
+
+from settings import CONFIG
 from core.exceptions import (
     CoroutineFailed,
     CharacterExists,
-    DiscordNotRegistered
+    DiscordNotRegistered,
+    MissingPermissions
 )
 
 class CharacterCreate():
-    """Cog handling setting and updating user psn id."""
+    """Cog handling new user character creation."""
     def __init__(self):
         self.characters_builder = CharactersBuilder()
         self.discord_builder = DiscordBuilder()
@@ -25,8 +28,16 @@ class CharacterCreate():
         self,
         interaction: discord.Interaction
     ):
-        """Update user bound psn id."""
+        """Create player character."""
         try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.account_character_create.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+
             # Create session
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
@@ -67,8 +78,9 @@ class CharacterCreate():
                 await session.close()
 
         except (
+            CharacterExists,
             DiscordNotRegistered,
-            CharacterExists
+            MissingPermissions
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
@@ -87,6 +99,7 @@ class CharacterCreate():
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Character Createation Failed",
+                    description="Internal Error",
                     color=discord.Color.red()
                 ),
                 ephemeral=True

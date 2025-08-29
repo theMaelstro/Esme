@@ -12,7 +12,10 @@ from data.connector import CONN
 from data import GuildBuilder
 from core.view.pagination import Pagination
 from core import BaseCog
-from core.exceptions import CoroutineFailed
+from core.exceptions import (
+    CoroutineFailed,
+    MissingPermissions
+)
 
 class GuildList(BaseCog):
     """Cog handling displaying of guilds in a list."""
@@ -32,6 +35,13 @@ class GuildList(BaseCog):
     async def guild_list(self, interaction: discord.Interaction):
         """Show all guilds."""
         try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.guild_list.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
             # Create session
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
@@ -66,6 +76,19 @@ class GuildList(BaseCog):
 
             logging.info("%s: %s", interaction.user.id, "Guild List Open")
             await Pagination(interaction, get_page, public=False).navegate()
+
+        except (
+            MissingPermissions
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Guild List Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
 
         except (
             CoroutineFailed

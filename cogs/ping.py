@@ -7,6 +7,9 @@ from discord import app_commands
 
 from settings import CONFIG
 from core import BaseCog
+from core.exceptions import (
+     MissingPermissions
+)
 
 class Ping(BaseCog):
     """Cog example with basic interaction response."""
@@ -24,18 +27,38 @@ class Ping(BaseCog):
     )
     async def ping(self, interaction: discord.Interaction):
         """Ping!"""
-        logging.info("%s: %s", interaction.user.id, "Ping!")
-        await interaction.response.send_message(
-            embed=discord.Embed(
-                title="Pong!",
-                description=(
-                    "# Pong"
-                    f"{interaction.user.mention}"
+        try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.ping.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+            logging.info("%s: %s", interaction.user.id, "Ping!")
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Pong!",
+                    description=(
+                        "# Pong"
+                        f"{interaction.user.mention}"
+                    ),
+                    color=discord.Color.green()
                 ),
-                color=discord.Color.green()
-            ),
-            ephemeral=True
-        )
+                ephemeral=True
+            )
+        except (
+            MissingPermissions
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Players Online Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
 
     @ping.error
     async def on_ping_error(

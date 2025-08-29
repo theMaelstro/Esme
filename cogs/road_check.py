@@ -27,7 +27,10 @@ class Road(BaseCog):
     ):
         """Check rengoku save file."""
         try:
-            if interaction.user.id not in CONFIG.discord.admin_user_ids:
+            if not CONFIG.check_permission(
+                CONFIG.commands.road_check.permission,
+                interaction.user
+            ):
                 raise MissingPermissions(
                     f"{interaction.user.mention} is missing permissions."
                 )
@@ -160,4 +163,5 @@ class Road(BaseCog):
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
-    await client.add_cog(Road(client))
+    if CONFIG.commands.road_check.enabled:
+        await client.add_cog(Road(client))

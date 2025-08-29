@@ -14,6 +14,8 @@ from data import (
     DiscordBuilder,
     GuildBuilder
 )
+
+from settings import CONFIG
 from core.exceptions import (
     CoroutineFailed,
     CharacterNameInvalid,
@@ -54,6 +56,14 @@ class MemberSwap():
     ):
         """Expel guild member."""
         try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.guild_members_swap.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+
             character_id_1 = validate_character(character_name_1)
             if not character_id_1:
                 raise CharacterNameInvalid(
@@ -65,7 +75,7 @@ class MemberSwap():
                 raise CharacterNameInvalid(
                     """Character Name is invalid."""
                 )
-            
+
             if character_id_1 == character_id_2:
                 raise CharactersAreEqual(
                     """Characters cannot be swapped."""
@@ -164,12 +174,12 @@ class MemberSwap():
                 )
 
         except (
-            CharacterNotSet,
             CharacterIsLeader,
+            CharacterNameInvalid,
+            CharacterNotInGuild,
+            CharacterNotSet,
             CharactersAreEqual,
             DiscordNotRegistered,
-            CharacterNotInGuild,
-            CharacterNameInvalid,
             MissingPermissions
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
@@ -189,7 +199,7 @@ class MemberSwap():
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Guild Expel Failed",
-                    description=e,
+                    description="Internal Error",
                     color=discord.Color.red()
                 ),
                 ephemeral=True
@@ -234,7 +244,7 @@ class MemberSwap():
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Guild Expel Failed",
-                    description=e,
+                    description="Internal Error",
                     color=discord.Color.red()
                 ),
                 ephemeral=True

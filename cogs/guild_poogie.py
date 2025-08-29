@@ -31,15 +31,17 @@ class GuildPoogie(BaseCog):
     )
     async def guild_poogie_set(self, interaction: discord.Interaction, guild_id: int):
         """Set guild poogie outfits."""
-        # Create session
-        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-        async with async_session() as session:
-            try:
-                if interaction.user.id not in CONFIG.discord.admin_user_ids:
-                    raise MissingPermissions(
-                        f"{interaction.user.mention} is missing permissions."
-                    )
-
+        try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.guild_poogie.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+            # Create session
+            async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+            async with async_session() as session:
                 guild = await self.guild_builder.select_poogie_outfits(session, guild_id)
                 if not guild:
                     raise CoroutineFailed(
@@ -74,44 +76,44 @@ class GuildPoogie(BaseCog):
                     ephemeral=True
                 )
 
-            except (
-                MissingPermissions
-            ) as e:
-                logging.warning("%s: %s", interaction.user.id, e)
-                await interaction.response.send_message(
-                    embed=discord.Embed(
-                        title="Poogie Update Failed",
-                        description=e,
-                        color=discord.Color.red()
-                    ),
-                    ephemeral=True
-                )
+        except (
+            MissingPermissions
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Poogie Update Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
 
-            except (
-                CoroutineFailed
-            ) as e:
-                logging.error("%s: %s", interaction.user.id, e)
-                await interaction.response.send_message(
-                    embed=discord.Embed(
-                        title="Poogie Update Failed",
-                        description=e,
-                        color=discord.Color.red()
-                    ),
-                    ephemeral=True
-                )
+        except (
+            CoroutineFailed
+        ) as e:
+            logging.error("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Poogie Update Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
 
-            except (
-                Exception
-            ) as e:
-                logging.error("%s: %s", interaction.user.id, e)
-                await interaction.response.send_message(
-                    embed=discord.Embed(
-                        title="Poogie Update Failed",
-                        description=e,
-                        color=discord.Color.red()
-                    ),
-                    ephemeral=True
-                )
+        except (
+            Exception
+        ) as e:
+            logging.error("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Poogie Update Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
 
     @guild_poogie_set.error
     async def on_drop_error(

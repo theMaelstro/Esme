@@ -6,10 +6,13 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from data.connector import CONN
 from data import UserBuilder, DiscordBuilder
+
+from settings import CONFIG
 from core.exceptions import (
     CoroutineFailed,
-    UsernameIncorrect,
-    UnmatchingPasswords
+    MissingPermissions,
+    UnmatchingPasswords,
+    UsernameIncorrect
 )
 from core.crypto import check_password
 
@@ -21,10 +24,10 @@ async def m_bind_credentials(
         password: str
     ):
     """Bind user account by using ingame credentials."""
-    # Create session
-    async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-    async with async_session() as session:
-        try:
+    try:
+        # Create session
+        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+        async with async_session() as session:
             # Get user info.
             user = await user_builder.select_user_by_username(
                 session,
@@ -82,43 +85,43 @@ async def m_bind_credentials(
             await session.commit()
             await session.close()
 
-        except (
-            UsernameIncorrect,
-            UnmatchingPasswords
-        ) as e:
-            logging.warning("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Binding Failed",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
+    except (
+        UsernameIncorrect,
+        UnmatchingPasswords
+    ) as e:
+        logging.warning("%s: %s", interaction.user.id, e)
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                title="Binding Failed",
+                description=e,
+                color=discord.Color.red()
+            ),
+            ephemeral=True
+        )
 
-        except (
-            CoroutineFailed
-        ) as e:
-            logging.error("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Binding Failed",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
+    except (
+        CoroutineFailed
+    ) as e:
+        logging.error("%s: %s", interaction.user.id, e)
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                title="Binding Failed",
+                description="Internal Error.",
+                color=discord.Color.red()
+            ),
+            ephemeral=True
+        )
 
-        except Exception as e:
-            logging.error("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Binding Failed",
-                    description="Unhandled exception.",
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
+    except Exception as e:
+        logging.error("%s: %s", interaction.user.id, e)
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                title="Binding Failed",
+                description="Unhandled exception.",
+                color=discord.Color.red()
+            ),
+            ephemeral=True
+        )
 
 class ModalBindCredentials(
     discord.ui.Modal,
@@ -172,6 +175,28 @@ class BindCredentials():
         interaction: discord.Interaction,
     ):
         """Bind user account by using ingame credentials."""
-        await interaction.response.send_modal(
-            ModalBindCredentials(self.user_builder, self.discord_builder)
-        )
+        try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.account_bind_credentials.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+
+            await interaction.response.send_modal(
+                ModalBindCredentials(self.user_builder, self.discord_builder)
+            )
+
+        except (
+            MissingPermissions
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Binding Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )

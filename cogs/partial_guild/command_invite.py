@@ -11,14 +11,15 @@ from data import (
     GuildBuilder
 )
 
+from settings import CONFIG
 from core.exceptions import (
-    CoroutineFailed,
+    CharacterAlreadyInGuild,
     CharacterNotSet,
     CharacterPendingInvite,
-    CharacterAlreadyInGuild,
-    GuildFull,
     DiscordNotRegistered,
-    MissingPermissions
+    GuildFull,
+    MissingPermissions,
+    UsersAreEqual
 )
 from core import max_members
 
@@ -32,8 +33,16 @@ class GuildInvite():
     async def guild_invite(self, interaction: discord.Interaction, member: discord.Member):
         """Show all guilds."""
         try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.guild_invite.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+
             if interaction.user.id == member.id:
-                raise CoroutineFailed(
+                raise UsersAreEqual(
                     "You can't invite yourself."
                 )
 
@@ -155,13 +164,13 @@ class GuildInvite():
                 )
 
         except (
-            CoroutineFailed,
+            CharacterAlreadyInGuild,
+            CharacterNotSet,
             CharacterPendingInvite,
             DiscordNotRegistered,
-            CharacterNotSet,
-            CharacterAlreadyInGuild,
             GuildFull,
-            MissingPermissions
+            MissingPermissions,
+            UsersAreEqual
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
@@ -180,6 +189,7 @@ class GuildInvite():
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Invitation Failed",
+                    description="Internal Error",
                     color=discord.Color.red()
                 ),
                 ephemeral=True

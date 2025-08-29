@@ -1,10 +1,15 @@
 """Extension module for GuildList Cog."""
+import logging
+
 import discord
 from discord.ext import commands
 from discord import app_commands
 
 from settings import CONFIG
 from core import BaseCog
+from core.exceptions import (
+    MissingPermissions
+)
 
 def loop_bit_group(group, count, check):
     if count != 0:
@@ -73,7 +78,7 @@ class KeyFlag(BaseCog):
     )
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.guild_list.cooldown,
+        CONFIG.commands.keyflag.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
     @app_commands.describe(hr1="Number of quests you finished on HR1.")
@@ -105,39 +110,59 @@ class KeyFlag(BaseCog):
         u6: bool
     ):
         """Show all guilds."""
-        flag = calculate_flag(
-            hr1,
-            hr2,
-            hr3,
-            hr4,
-            hr5,
-            hr6,
-            u1,
-            u2,
-            u3,
-            u4,
-            u5,
-            u6
-        )
-        await interaction.response.send_message(
-            embed=discord.Embed(
-                title="Keyflag",
-                description=(
-                    "# Flag Details\n"
-                    "       Quests    Urgents\n"
-                    f"HR1:  `{hr1}`  `{u1}`\n"
-                    f"HR2:  `{hr2}`  `{u2}`\n"
-                    f"HR3:  `{hr3}`  `{u3}`\n"
-                    f"HR4:  `{hr4}`  `{u4}`\n"
-                    f"HR5:  `{hr5}`  `{u5}`\n"
-                    f"HR6:  `{hr6}`  `{u6}`\n"
-                    "# Result\n"
-                    f"```!kqf set {flag}```"
+        try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.ping.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+            flag = calculate_flag(
+                hr1,
+                hr2,
+                hr3,
+                hr4,
+                hr5,
+                hr6,
+                u1,
+                u2,
+                u3,
+                u4,
+                u5,
+                u6
+            )
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Keyflag",
+                    description=(
+                        "# Flag Details\n"
+                        "       Quests    Urgents\n"
+                        f"HR1:  `{hr1}`  `{u1}`\n"
+                        f"HR2:  `{hr2}`  `{u2}`\n"
+                        f"HR3:  `{hr3}`  `{u3}`\n"
+                        f"HR4:  `{hr4}`  `{u4}`\n"
+                        f"HR5:  `{hr5}`  `{u5}`\n"
+                        f"HR6:  `{hr6}`  `{u6}`\n"
+                        "# Result\n"
+                        f"```!kqf set {flag}```"
+                    ),
+                    color=discord.Color.green()
                 ),
-                color=discord.Color.green()
-            ),
-            ephemeral=True
-        )
+                ephemeral=True
+            )
+        except (
+            MissingPermissions
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Keyflag Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
 
     @flag_calc.error
     async def on_flag_calc_error(
@@ -150,5 +175,5 @@ class KeyFlag(BaseCog):
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
-    if CONFIG.commands.guild_list.enabled:
+    if CONFIG.commands.keyflag.enabled:
         await client.add_cog(KeyFlag(client))

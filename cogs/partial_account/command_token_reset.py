@@ -4,14 +4,16 @@ import logging
 import discord
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from settings import CONFIG
 from data.connector import CONN
 from data import UserBuilder, DiscordBuilder
+
+from settings import CONFIG
 from core.exceptions import (
     CoroutineFailed,
-    UsernameIncorrect,
+    DiscordNotRegistered,
+    MissingPermissions,
     UnmatchingPasswords,
-    DiscordNotRegistered
+    UsernameIncorrect
 )
 from core.crypto import check_password
 
@@ -23,10 +25,10 @@ async def m_token_reset(
         password: str
 ):
     """Reset account token."""
-    # Create session
-    async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-    async with async_session() as session:
-        try:
+    try:
+        # Create session
+        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+        async with async_session() as session:
             user = await user_builder.select_user_by_username(session, username)
             if user is None:
                 raise UsernameIncorrect(
@@ -63,38 +65,35 @@ async def m_token_reset(
 
             # Commit
             await session.commit()
-
-        except (
-            UsernameIncorrect,
-            UnmatchingPasswords,
-            UnmatchingPasswords
-        ) as e:
-            logging.warning("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Token Reset Failed",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
-
-        except (
-            CoroutineFailed
-        ) as e:
-            logging.error("%s: %s", interaction.user.id, e)
-            await interaction.response.send_message(
-                embed=discord.Embed(
-                    title="Token Reset Failed",
-                    description=e,
-                    color=discord.Color.red()
-                ),
-                ephemeral=True
-            )
-
-        finally:
-            # Close Session
             await session.close()
+
+    except (
+        DiscordNotRegistered,
+        UnmatchingPasswords,
+        UsernameIncorrect
+    ) as e:
+        logging.warning("%s: %s", interaction.user.id, e)
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                title="Token Reset Failed",
+                description=e,
+                color=discord.Color.red()
+            ),
+            ephemeral=True
+        )
+
+    except (
+        CoroutineFailed
+    ) as e:
+        logging.error("%s: %s", interaction.user.id, e)
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                title="Token Reset Failed",
+                description="Internal Error",
+                color=discord.Color.red()
+            ),
+            ephemeral=True
+        )
 
 class ModalTokenReset(
     discord.ui.Modal,
@@ -148,6 +147,27 @@ class TokenReset():
         interaction: discord.Interaction
     ):
         """Reset account token."""
-        await interaction.response.send_modal(
-            ModalTokenReset(self.user_builder, self.discord_builder)
-        )
+        try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.account_token_reset.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+            await interaction.response.send_modal(
+                ModalTokenReset(self.user_builder, self.discord_builder)
+            )
+
+        except (
+            MissingPermissions
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Token Reset Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )

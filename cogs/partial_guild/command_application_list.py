@@ -12,15 +12,16 @@ from data import (
     GuildBuilder
 )
 
+from settings import CONFIG
 from core.exceptions import (
+    CharacterNotInGuild,
+    CharacterNotSet,
     CoroutineFailed,
     DiscordNotRegistered,
     GuildFull,
     InvalidArgument,
-    MissingPermissions,
-    CharacterNotInGuild,
-    CharacterNotSet,
-    MissingGuildApplications
+    MissingGuildApplications,
+    MissingPermissions
 )
 from core import max_members
 
@@ -134,7 +135,7 @@ class DynamicApplicationView(discord.ui.View):
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Application Process Failed",
-                    description="Guild is full and cannot accept more members.",
+                    description=e,
                     color=discord.Color.red()
                 ),
                 ephemeral=True
@@ -186,7 +187,7 @@ class DynamicApplicationView(discord.ui.View):
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Application Process Failed",
-                    description=e,
+                    description="Internal Error.",
                     color=discord.Color.red()
                 ),
                 ephemeral=True
@@ -278,6 +279,14 @@ class ApplicationList():
     ):
         """Manage guild applications."""
         try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.guild_application_list.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+
             # Start session
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
@@ -376,7 +385,7 @@ class ApplicationList():
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Application List",
-                    description="No applications pending.",
+                    description=e,
                     color=discord.Color.blue()
                 ),
                 ephemeral=True
@@ -403,6 +412,7 @@ class ApplicationList():
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Application Process Failed",
+                    description="Internal Error.",
                     color=discord.Color.red()
                 ),
                 ephemeral=True
@@ -414,6 +424,7 @@ class ApplicationList():
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Application Process Failed",
+                    description="Internal Error.",
                     color=discord.Color.red()
                 ),
                 ephemeral=True

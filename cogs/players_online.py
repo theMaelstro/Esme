@@ -11,7 +11,8 @@ from data.connector import CONN
 from data import UniversalBuilder
 from core import BaseCog
 from core.exceptions import (
-    CoroutineFailed
+    CoroutineFailed,
+    MissingPermissions
 )
 
 class PlayersOnline(BaseCog):
@@ -26,15 +27,22 @@ class PlayersOnline(BaseCog):
     )
     @app_commands.checks.cooldown(
         1,
-        CONFIG.commands.guild_list.cooldown,
+        CONFIG.commands.players_online.cooldown,
         key=lambda i: (i.guild_id, i.user.id)
     )
-    async def flag_calc(
+    async def players_online(
         self,
         interaction: discord.Interaction
     ):
         """Display online players."""
         try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.players_online.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions."
+                )
             # Create session
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
@@ -61,6 +69,18 @@ class PlayersOnline(BaseCog):
                 ephemeral=True
             )
         except (
+            MissingPermissions
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Players Online Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+        except (
             CoroutineFailed
         ) as e:
             logging.error("%s: %s", interaction.user.id, e)
@@ -73,8 +93,8 @@ class PlayersOnline(BaseCog):
                 ephemeral=True
             )
 
-    @flag_calc.error
-    async def on_flag_calc_error(
+    @players_online.error
+    async def on_players_online_error(
         self,
         interaction: discord.Interaction,
         error: app_commands.AppCommandError
@@ -84,5 +104,5 @@ class PlayersOnline(BaseCog):
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
-    if CONFIG.commands.guild_list.enabled:
+    if CONFIG.commands.players_online.enabled:
         await client.add_cog(PlayersOnline(client))

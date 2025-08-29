@@ -13,9 +13,9 @@ from data import (
 )
 from core import get_weapon_type_image_url
 from core.exceptions import (
-    CoroutineFailed,
     CharacterNotSet,
-    DiscordNotRegistered
+    DiscordNotRegistered,
+    MissingPermissions
 )
 
 class Card():
@@ -28,10 +28,18 @@ class Card():
 
     async def card(self, interaction: discord.Interaction, member: discord.Member):
         """Select active character."""
-        # Create session
-        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-        async with async_session() as session:
-            try:
+        try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.account_card.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+
+            # Create session
+            async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+            async with async_session() as session:
                 # Check if user is registered.
                 discord_user = await self.discord_builder.select_discord_user(
                     session, str(interaction.user.id) if not member else str(member.id)
@@ -52,18 +60,18 @@ class Card():
                         "No character selected. Please use `/account character select` command."
                     )
 
-                elevated = (
-                    interaction.user.id in CONFIG.discord.admin_user_ids
-                ) or (
-                    interaction.user.id == member.id if member else False
+                elevated = CONFIG.check_permission(
+                    CONFIG.commands.account_card.admin_permission,
+                    interaction.user
                 )
+                owner = interaction.user.id == member.id if member else False
 
                 # Prepare embed
                 embed=discord.Embed(
                     title=
                         (
                             f'{character.uid} | {character.character_id} | '
-                            if interaction.user.id in CONFIG.discord.admin_user_ids
+                            if elevated
                             else ''
                         ) + re.escape(character.character_name),
                     description='',
@@ -73,12 +81,12 @@ class Card():
                 if character.guild_name:
                     embed.description += (
                         f'**{character.guild_id} |** '
-                            if interaction.user.id in CONFIG.discord.admin_user_ids
+                            if elevated
                             else ''
                     ) + f"**{re.escape(character.guild_name)}**"
                     embed.description += f"\nmember since\n<t:{round(character.joined_at_epoch)}:d>"
 
-                if elevated and character.psn_id:
+                if (elevated or owner) and character.psn_id:
                     embed.description += f"\n\n**PSN**: `{re.escape(character.psn_id)}`"
 
                 if character.gr > 0:
@@ -94,7 +102,7 @@ class Card():
                         inline = True
                     )
 
-                if elevated:
+                if elevated or owner:
                     embed.add_field(
                         name = 'LAST LOGIN',
                         value = f"<t:{character.last_login}:f>",
@@ -132,29 +140,17 @@ class Card():
                     embed=embed,
                     ephemeral=True
                 )
-            except (
-                DiscordNotRegistered,
-                CharacterNotSet
-            ) as e:
-                logging.warning("%s: %s", interaction.user.id, e)
-                await interaction.response.send_message(
-                    embed=discord.Embed(
-                        title="Card Failed",
-                        description=e,
-                        color=discord.Color.red()
-                    ),
-                    ephemeral=True
-                )
-
-            except (
-                CoroutineFailed
-            ) as e:
-                logging.error("%s: %s", interaction.user.id, e)
-                await interaction.response.send_message(
-                    embed=discord.Embed(
-                        title="Card Failed",
-                        description=e,
-                        color=discord.Color.red()
-                    ),
-                    ephemeral=True
-                )
+        except (
+            CharacterNotSet,
+            DiscordNotRegistered,
+            MissingPermissions
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Card Failed",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
