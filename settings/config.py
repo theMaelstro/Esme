@@ -41,6 +41,7 @@ class Listeners:
 @dataclasses.dataclass
 class Tasks:
     """Class representing config tasks settings."""
+    live_chat: Toggle
     players_count: Toggle
 
 @dataclasses.dataclass
@@ -74,7 +75,6 @@ class Erupe:
 @dataclasses.dataclass
 class LiveChat:
     """Class representing config live chat settings"""
-    chat_task: Toggle
     listen_port: int
     remote_port: int
     api_key: str
@@ -159,7 +159,6 @@ class Config:
                 ]
             },
             'LiveChat': {
-                'chat_task': True,
                 'listen_port': None,
                 'remote_port': None,
                 'api_key': None
@@ -206,6 +205,7 @@ class Config:
                     'events': False
                 },
                 'Tasks': {
+                    'live_chat': False,
                     'players_count': False
                 },
                 'Cogs': {
@@ -260,9 +260,6 @@ class Config:
             )
 
             self.livechat = LiveChat(
-                Toggle(
-                    my_json['LiveChat']['chat_task']
-                ),
                 my_json['LiveChat']['listen_port'],
                 my_json['LiveChat']['remote_port'],
                 my_json['LiveChat']['api_key']
@@ -408,6 +405,9 @@ class Config:
                     )
                 ),
                 Tasks(
+                    Toggle(
+                        my_json['Features']['Tasks']['live_chat']
+                    ),
                     Toggle(
                         my_json['Features']['Tasks']['players_count']
                     )

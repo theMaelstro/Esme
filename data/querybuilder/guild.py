@@ -345,8 +345,6 @@ class GuildBuilder():
 
     async def select_recruiter_discord_ids(self, session, guild_id: int):
         """Select guild recruiters."""
-        # TODO: Break queries into corresponding builders
-        # and use import from for needed methods
         stmt_leader = (
             select(
                 Guilds
@@ -410,6 +408,34 @@ class GuildBuilder():
 
             discord_ids = await self.db.select_objects(session, stmt_discord_ids)
             return [discord.discord_id for discord in discord_ids]
+        return None
+
+    async def select_applicant_discord_id(self, session, character_id: int):
+        """Select guild recruiters."""
+        stmt = (
+            select(Characters)
+            .options(
+                load_only(Characters.user_id)
+            )
+            .where(Characters.id == character_id)
+            .distinct()
+        )
+
+        user = await self.db.select_object(session, stmt)
+
+        if user is not None:
+            stmt_discord_id = (
+                select(Discord)
+                .options(
+                    load_only(Discord.discord_id)
+                )
+                .where(
+                    Discord.user_id == user.user_id
+                )
+            )
+
+            discord_id = await self.db.select_object(session, stmt_discord_id)
+            return [discord_id.discord_id]
         return None
 
     # Guild Applications

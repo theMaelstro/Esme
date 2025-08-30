@@ -69,6 +69,14 @@ class AsyncListener(BaseCog):
         """
         Handle guild application notification payload
         and send embed results.
+            Payload[
+                "id",
+                "guild_id",
+                "character_id",
+                "actor_id",
+                "application_type",
+                "created_at"
+            ]
         """
         logging.info("Received: %s", notification)
         try:
@@ -87,10 +95,16 @@ class AsyncListener(BaseCog):
                     session,
                     payload['id']
                 )
-                discord_ids = await self.guild_builder.select_recruiter_discord_ids(
-                    session,
-                    payload['guild_id']
-                )
+                if payload["application_type"] == "applied":
+                    discord_ids = await self.guild_builder.select_recruiter_discord_ids(
+                        session,
+                        payload['guild_id']
+                    )
+                else:
+                    discord_ids = await self.guild_builder.select_applicant_discord_id(
+                        session,
+                        payload['character_id']
+                    )
                 await session.close()
 
             # Prepare embed
@@ -124,31 +138,43 @@ class AsyncListener(BaseCog):
                         value=f"{''.join(f'<@{str(i)}>' for i in discord_ids)}",
                         inline=False
                     )
-                # Actions
-                embed.add_field(
-                    name="Check Inbox",
-                    value="```/guild application list```",
-                    inline=False
-                )
-                embed.add_field(
-                    name="Accept",
-                    value=f"```/guild application accept id:{payload['id']}```",
-                    inline=False
-                )
-                embed.add_field(
-                    name="Reject",
-                    value=f"```/guild application reject id:{payload['id']}```",
-                    inline=False
-                )
+            if payload['application_type'] == 'invited':
+                if discord_ids:
+                    content+=f"{''.join(f'<@{str(i)}>' for i in discord_ids)}"
+                    # Users responsible for action
+                    embed.add_field(
+                        name="Recipient",
+                        value=f"{''.join(f'<@{str(i)}>' for i in discord_ids)}",
+                        inline=False
+                    )
+
+            # Actions
+            embed.add_field(
+                name="Check Inbox",
+                value="```/guild application list```",
+                inline=False
+            )
+            embed.add_field(
+                name="Accept",
+                value=f"```/guild application accept id:{payload['id']}```",
+                inline=False
+            )
+            embed.add_field(
+                name="Reject",
+                value=f"```/guild application reject id:{payload['id']}```",
+                inline=False
+            )
 
             # Application Creator
             embed.set_footer(
                 text=f"Requested by {re.escape(guild_application.actor_name)}"
             )
-            await channel.send(
-                content=content,
-                embed=embed
-            )
+
+            if discord_ids:
+                await channel.send(
+                    content=content,
+                    embed=embed
+                )
 
         except (
             SettingNotConfigured

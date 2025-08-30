@@ -367,5 +367,5 @@ class LiveChatTask(BaseCog):
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
-    if CONFIG.livechat.chat_task.enabled:
+    if CONFIG.features.tasks.live_chat.enabled:
         await client.add_cog(LiveChatTask(client))

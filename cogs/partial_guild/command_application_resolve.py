@@ -66,7 +66,14 @@ class ApplicationResolve():
                     session,
                     guild_application.guild_id
                 )
-                if str(interaction.user.id) not in discord_ids:
+
+                if (
+                    str(interaction.user.id) not in discord_ids
+                    and not (
+                        guild_application.character_id == discord_user.character_id
+                        and guild_application.application_type == 'invited'
+                    )
+                ):
                     raise MissingPermissions(
                         "You are not elevated guild member."
                     )
