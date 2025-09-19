@@ -86,7 +86,7 @@ class CharacterBackup():
                     interaction.user.id
                 )
                 time_now = round(datetime.now(timezone.utc).timestamp())
-                if cooldown:
+                if cooldown.cd_backup:
                     days_since = get_days(
                         time_now,
                         cooldown.cd_backup
