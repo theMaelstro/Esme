@@ -2,14 +2,11 @@
 import logging
 
 import discord
-from discord.ext import commands
-from discord import app_commands
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from settings import CONFIG
 from data.connector import CONN
 from data import GuildBuilder
-from core import BaseCog
 from core.exceptions import (
     CoroutineFailed,
     MissingPermissions
@@ -17,18 +14,11 @@ from core.exceptions import (
 from core.converters import poogie
 from core.view import AppPoogieOutfits
 
-class GuildPoogie(BaseCog):
+class GuildPoogie():
     """Cog handling updating of guild poogie outfits."""
-    def __init__(self, client: commands.Bot):
-        self.client = client
+    def __init__(self):
         self.guild_builder = GuildBuilder()
 
-    @app_commands.command(name="guild_poogie_set", description="Set guild poogie outfits.")
-    @app_commands.checks.cooldown(
-        1,
-        CONFIG.commands.guild_poogie.cooldown,
-        key=lambda i: (i.guild_id, i.user.id)
-    )
     async def guild_poogie_set(self, interaction: discord.Interaction, guild_id: int):
         """Set guild poogie outfits."""
         try:
@@ -114,17 +104,3 @@ class GuildPoogie(BaseCog):
                 ),
                 ephemeral=True
             )
-
-    @guild_poogie_set.error
-    async def on_drop_error(
-        self,
-        interaction: discord.Interaction,
-        error: app_commands.AppCommandError
-    ):
-        """On cooldown send remaining time info message."""
-        await self.on_cooldown_response(interaction, error)
-
-async def setup(client:commands.Bot) -> None:
-    """Initialize cog."""
-    if CONFIG.commands.guild_poogie.enabled:
-        await client.add_cog(GuildPoogie(client))

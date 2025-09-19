@@ -9,7 +9,7 @@ import dataclasses
 import logging
 
 @dataclasses.dataclass
-class Command:
+class CommandSimple:
     """Class representing single config command settings."""
     enabled: bool
     cooldown: float
@@ -25,6 +25,14 @@ class ElevatedCommand:
     cooldown: float
     permission: int
     admin_permission: int
+
+@dataclasses.dataclass
+class CommandValidated:
+    """Class representing single config command settings."""
+    enabled: bool
+    cooldown: float
+    hard_cooldown: int
+    permission: int
 
 @dataclasses.dataclass
 class Toggle:
@@ -71,6 +79,7 @@ class Discord:
 class Erupe:
     """Class representing config erupe settings."""
     clan_member_limits: list
+    timestamp_offset: int
 
 @dataclasses.dataclass
 class LiveChat:
@@ -91,29 +100,31 @@ class Database:
 @dataclasses.dataclass
 class Commands:
     """Class representing config commands settings."""
-    account_bind_credentials: Command
-    account_bind_token: Command
+    account_bind_credentials: CommandSimple
+    account_bind_token: CommandSimple
     account_card: ElevatedCommand
-    account_character_create: Command
-    account_character_select: Command
-    account_psn_clear: Command
-    account_set_psn: Command
-    account_token_reset: Command
-    guild_application_list: Command
-    guild_application_resolve: Command
-    guild_apply: Command
-    guild_invite: Command
-    guild_list: Command
-    guild_members: Command
-    guild_members_expel: Command
-    guild_members_list: Command
-    guild_members_swap: Command
-    guild_poogie: Command
-    guild_set_leader: Command
-    keyflag: Command
-    ping: Command
-    players_online: Command
-    road_check: Command
+    account_character_backup: CommandValidated
+    account_character_create: CommandSimple
+    account_character_select: CommandSimple
+    account_psn_clear: CommandSimple
+    account_set_psn: CommandSimple
+    account_token_reset: CommandSimple
+    features: CommandSimple
+    guild_application_list: CommandSimple
+    guild_application_resolve: CommandSimple
+    guild_apply: CommandSimple
+    guild_invite: CommandSimple
+    guild_list: CommandSimple
+    guild_members: CommandSimple
+    guild_members_expel: CommandSimple
+    guild_members_list: CommandSimple
+    guild_members_swap: CommandSimple
+    guild_poogie: CommandSimple
+    guild_set_leader: CommandSimple
+    keyflag: CommandSimple
+    ping: CommandSimple
+    players_online: CommandSimple
+    road_check: CommandSimple
 
 @dataclasses.dataclass
 class Features:
@@ -171,7 +182,8 @@ class Config:
                 'database': 'erupe'
             },
             'Erupe': {
-                'clan_member_limits': [[0, 30], [3, 40], [7, 50], [10, 60]]
+                'clan_member_limits': [[0, 30], [3, 40], [7, 50], [10, 60]],
+                'timestamp_offset': 0
             },
             'Commands': {
                 'account_bind_credentials': {'enabled': True, 'cooldown': 0.0, 'permission': None},
@@ -182,6 +194,7 @@ class Config:
                 'account_psn_clear': {'enabled': True, 'cooldown': 0.0, 'permission': None},
                 'account_set_psn': {'enabled': True, 'cooldown': 0.0, 'permission': None},
                 'account_token_reset': {'enabled': True, 'cooldown': 0.0, 'permission': None},
+                'features': {'enabled': True, 'cooldown': 0.0, 'permission': None},
                 'guild_application_list': {'enabled': True, 'cooldown': 0.0, 'permission': None},
                 'guild_application_resolve': {'enabled': True, 'cooldown': 0.0, 'permission': None},
                 'guild_apply': {'enabled': True, 'cooldown': 0.0, 'permission': None},
@@ -256,7 +269,8 @@ class Config:
             )
 
             self.erupe = Erupe(
-                my_json['Erupe']['clan_member_limits']
+                my_json['Erupe']['clan_member_limits'],
+                my_json['Erupe']['timestamp_offset']
             )
 
             self.livechat = LiveChat(
@@ -274,12 +288,12 @@ class Config:
             )
 
             self.commands = Commands(
-                Command(
+                CommandSimple(
                     my_json['Commands']['account_bind_credentials']['enabled'],
                     my_json['Commands']['account_bind_credentials']['cooldown'],
                     my_json['Commands']['account_bind_credentials']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['account_bind_token']['enabled'],
                     my_json['Commands']['account_bind_token']['cooldown'],
                     my_json['Commands']['account_bind_token']['permission']
@@ -290,102 +304,113 @@ class Config:
                     my_json['Commands']['account_card']['permission'],
                     my_json['Commands']['account_card']['admin_permission']
                 ),
-                Command(
+                CommandValidated(
+                    my_json['Commands']['account_character_backup']['enabled'],
+                    my_json['Commands']['account_character_backup']['cooldown'],
+                    my_json['Commands']['account_character_backup']['hard_cooldown'],
+                    my_json['Commands']['account_character_backup']['permission']
+                ),
+                CommandSimple(
                     my_json['Commands']['account_character_create']['enabled'],
                     my_json['Commands']['account_character_create']['cooldown'],
                     my_json['Commands']['account_character_create']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['account_character_select']['enabled'],
                     my_json['Commands']['account_character_select']['cooldown'],
                     my_json['Commands']['account_character_select']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['account_psn_clear']['enabled'],
                     my_json['Commands']['account_psn_clear']['cooldown'],
                     my_json['Commands']['account_psn_clear']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['account_set_psn']['enabled'],
                     my_json['Commands']['account_set_psn']['cooldown'],
                     my_json['Commands']['account_set_psn']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['account_token_reset']['enabled'],
                     my_json['Commands']['account_token_reset']['cooldown'],
                     my_json['Commands']['account_token_reset']['permission']
                 ),
-                Command(
+                CommandSimple(
+                    my_json['Commands']['features']['enabled'],
+                    my_json['Commands']['features']['cooldown'],
+                    my_json['Commands']['features']['permission']
+                ),
+                CommandSimple(
                     my_json['Commands']['guild_application_list']['enabled'],
                     my_json['Commands']['guild_application_list']['cooldown'],
                     my_json['Commands']['guild_application_list']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['guild_application_resolve']['enabled'],
                     my_json['Commands']['guild_application_resolve']['cooldown'],
                     my_json['Commands']['guild_application_resolve']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['guild_apply']['enabled'],
                     my_json['Commands']['guild_apply']['cooldown'],
                     my_json['Commands']['guild_apply']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['guild_invite']['enabled'],
                     my_json['Commands']['guild_invite']['cooldown'],
                     my_json['Commands']['guild_invite']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['guild_list']['enabled'],
                     my_json['Commands']['guild_list']['cooldown'],
                     my_json['Commands']['guild_list']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['guild_members']['enabled'],
                     my_json['Commands']['guild_members']['cooldown'],
                     my_json['Commands']['guild_members']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['guild_members_expel']['enabled'],
                     my_json['Commands']['guild_members_expel']['cooldown'],
                     my_json['Commands']['guild_members_expel']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['guild_members_list']['enabled'],
                     my_json['Commands']['guild_members_list']['cooldown'],
                     my_json['Commands']['guild_members_list']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['guild_members_swap']['enabled'],
                     my_json['Commands']['guild_members_swap']['cooldown'],
                     my_json['Commands']['guild_members_swap']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['guild_poogie']['enabled'],
                     my_json['Commands']['guild_poogie']['cooldown'],
                     my_json['Commands']['guild_poogie']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['guild_set_leader']['enabled'],
                     my_json['Commands']['guild_set_leader']['cooldown'],
                     my_json['Commands']['guild_set_leader']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['keyflag']['enabled'],
                     my_json['Commands']['keyflag']['cooldown'],
                     my_json['Commands']['keyflag']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['ping']['enabled'],
                     my_json['Commands']['ping']['cooldown'],
                     my_json['Commands']['ping']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['players_online']['enabled'],
                     my_json['Commands']['players_online']['cooldown'],
                     my_json['Commands']['players_online']['permission']
                 ),
-                Command(
+                CommandSimple(
                     my_json['Commands']['road_check']['enabled'],
                     my_json['Commands']['road_check']['cooldown'],
                     my_json['Commands']['road_check']['permission']

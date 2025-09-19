@@ -21,7 +21,7 @@ from core.exceptions import (
 class CharacterCreate():
     """Cog handling new user character creation."""
     def __init__(self):
-        self.characters_builder = CharactersBuilder()
+        self.character_builder = CharactersBuilder()
         self.discord_builder = DiscordBuilder()
 
     async def character_create(
@@ -51,14 +51,14 @@ class CharacterCreate():
                         "No account registered for this discord user."
                 )
 
-                if await self.characters_builder.select_characters_by_user_id(
+                if await self.character_builder.select_characters_by_user_id(
                     session, discord_user.user_id
                 ):
                     raise CharacterExists(
                         "Character already exists for this discord user."
                     )
 
-                await self.characters_builder.create_character(
+                await self.character_builder.create_character(
                     session,
                     discord_user.user_id
                 )
@@ -85,7 +85,7 @@ class CharacterCreate():
             logging.warning("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
                 embed=discord.Embed(
-                    title="Character Createation Failed",
+                    title="Character Creation Failed",
                     description=e,
                     color=discord.Color.red()
                 ),
@@ -98,7 +98,7 @@ class CharacterCreate():
             logging.error("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
                 embed=discord.Embed(
-                    title="Character Createation Failed",
+                    title="Character Creation Failed",
                     description="Internal Error",
                     color=discord.Color.red()
                 ),

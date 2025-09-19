@@ -5,22 +5,12 @@ import logging
 
 import requests
 import discord
-from discord.ext import commands
-from discord import app_commands
 
 from settings import CONFIG
-from core import BaseCog
 from core.exceptions import MissingPermissions
 
-class Road(BaseCog):
+class Road():
     """Cog handling reading road progress data."""
-    def __init__(self, client: commands.Bot):
-        self.client = client
-
-    @app_commands.command(
-        name="checkroadstats",
-        description="Checks the road stats of the given file."
-    )
     async def check_road_stats(
         self, interaction: discord.Interaction,
         file: discord.Attachment
@@ -160,8 +150,3 @@ class Road(BaseCog):
         max_points_reached = int(f'0x{hex_mpr}', 0)
 
         return [file_length, max_floor_reached, max_points_reached]
-
-async def setup(client:commands.Bot) -> None:
-    """Initialize cog."""
-    if CONFIG.commands.road_check.enabled:
-        await client.add_cog(Road(client))

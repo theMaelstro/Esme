@@ -1,4 +1,6 @@
 """Query Builder module for Discord related queries."""
+from typing import Literal
+
 from sqlalchemy import select, update
 from sqlalchemy.orm import load_only
 
@@ -64,4 +66,40 @@ class DiscordBuilder():
             .where(Discord.discord_id == discord_id)
             .values(character_id=character_id)
         )
+        return await self.db.update_objects(session, stmt)
+
+    async def get_cooldown(
+        self,
+        session,
+        discord_id: int,
+    ):
+        """Get cooldown for discord user."""
+        stmt = select(Discord).options(
+            load_only(
+                Discord.id,
+                Discord.cd_backup
+            )
+        ).where(
+            Discord.discord_id == str(discord_id)
+        )
+        return await self.db.select_object(session, stmt)
+
+    async def update_cooldown(
+        self,
+        session,
+        discord_id: int,
+        cd_type: Literal["backup"],
+        timestamp: int
+    ) -> (int | None):
+        """Update cooldown for discord user."""
+        stmt = (
+            update(
+                Discord
+            ).where(
+                Discord.discord_id == str(discord_id)
+            )
+        )
+        match cd_type:
+            case "backup":
+                stmt = stmt.values(cd_backup=timestamp)
         return await self.db.update_objects(session, stmt)

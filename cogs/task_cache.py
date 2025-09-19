@@ -22,7 +22,7 @@ class CacheUpdate(BaseCog):
     def __init__(self, client: commands.Bot):
         self.client = client
         self.guild_builder = GuildBuilder()
-        self.characters_builder = CharactersBuilder()
+        self.character_builder = CharactersBuilder()
 
     @tasks.loop(minutes=5)
     async def update_cache(self):
@@ -32,7 +32,7 @@ class CacheUpdate(BaseCog):
         async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
         async with async_session() as session:
             guilds = await self.guild_builder.select_recruiting_guilds(session)
-            guild_character_details = await self.characters_builder.select_characters_in_guild_details(session)
+            guild_character_details = await self.character_builder.select_characters_in_guild_details(session)
 
             # Close Session
             await session.commit()

@@ -14,3 +14,4 @@ class Discord(Base):
     discord_id: Mapped[str] = mapped_column(VARCHAR(21))
     user_id: Mapped[int]
     character_id: Mapped[int] = mapped_column(nullable=True)
+    cd_backup: Mapped[int] = mapped_column(nullable=True)

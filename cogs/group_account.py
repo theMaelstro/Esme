@@ -11,6 +11,7 @@ from .partial_account import (
     Card,
     CharacterCreate,
     CharacterSelect,
+    CharacterBackup,
     PsnClear,
     PsnSet,
     TokenReset
@@ -155,9 +156,24 @@ class AccountCog(BaseCog):
         partial_character_create = CharacterCreate()
         await partial_character_create.character_create(interaction)
 
+    @group_character.command(
+        name="backup",
+        description="Get character backup in zip. Enable dms or open dm with Esme."
+    )
+    @app_commands.checks.cooldown(
+        1,
+        CONFIG.commands.account_character_create.cooldown,
+        key=lambda i: (i.guild_id, i.user.id)
+    )
+    async def account_character_backup(self, interaction: discord.Interaction) -> None:
+        """Get character backup in zip."""
+        partial_character_backup = CharacterBackup()
+        await partial_character_backup.character_backup(interaction)
+
     @account_bind_credentials.error
     @account_bind_token.error
     @account_card.error
+    @account_character_backup.error
     @account_character_create.error
     @account_character_select.error
     @account_psn_clear.error

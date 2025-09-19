@@ -210,15 +210,25 @@ class AsyncListener(BaseCog):
                 )
             payload =json.loads(notification.payload)
             if payload['event_type'] == 'festa':
-                utc_time_now = datetime.now(timezone.utc) + timedelta(seconds=10)
+                utc_time_now = (
+                    datetime.now(timezone.utc)
+                    + timedelta(hours=CONFIG.erupe.timestamp_offset)
+                )
                 events = {
                     "Festi Registration Week": await guild.create_scheduled_event(
                         name = f"Hunter Festival #{payload['id']}: Registration",
-                        start_time = utc_time_now,
+                        start_time = (
+                            utc_time_now
+                            + timedelta(hours=CONFIG.erupe.timestamp_offset)
+                        ),
                         entity_type=discord.EntityType.external,
                         privacy_level=discord.PrivacyLevel.guild_only,
                         location="Renewal Game Server",
-                        end_time= utc_time_now + timedelta(days=7),
+                        end_time= (
+                            utc_time_now
+                            + timedelta(days=7)
+                            + timedelta(hours=CONFIG.erupe.timestamp_offset)
+                        ),
                         description=(
                             "*Festival Registration week just started. "
                             "Guild Leaders and Co-Leaders can now sign-up their Guilds "
@@ -231,11 +241,19 @@ class AsyncListener(BaseCog):
                     ),
                     "Festi Hunting Week": await guild.create_scheduled_event(
                         name = f"Hunter Festival #{payload['id']}: Hunting",
-                        start_time = utc_time_now + timedelta(days=7),
+                        start_time = (
+                            utc_time_now
+                            + timedelta(days=7)
+                            + timedelta(hours=CONFIG.erupe.timestamp_offset)
+                        ),
                         entity_type=discord.EntityType.external,
                         privacy_level=discord.PrivacyLevel.guild_only,
                         location="Renewal Game Server",
-                        end_time= utc_time_now + timedelta(days=14),
+                        end_time= (
+                            utc_time_now
+                            + timedelta(days=14)
+                            + timedelta(hours=CONFIG.erupe.timestamp_offset)
+                        ),
                         description=(
                             "*Festival Hunting week just started. "
                             "Take part in game activities to earn Soul Points for your team. "
@@ -257,11 +275,19 @@ class AsyncListener(BaseCog):
                     ),
                     "Festi Rewards Week": await guild.create_scheduled_event(
                         name = f"Hunter Festival #{payload['id']}: Rewards",
-                        start_time = utc_time_now + timedelta(days=14),
+                        start_time = (
+                            utc_time_now
+                            + timedelta(days=14)
+                            + timedelta(hours=CONFIG.erupe.timestamp_offset)
+                        ),
                         entity_type=discord.EntityType.external,
                         privacy_level=discord.PrivacyLevel.guild_only,
                         location="Renewal Game Server",
-                        end_time= utc_time_now + timedelta(days=21),
+                        end_time= (
+                            utc_time_now
+                            + timedelta(days=21)
+                            + timedelta(hours=CONFIG.erupe.timestamp_offset)
+                        ),
                         description=(
                             "*Festival Reward week has just started. "
                             "Rewards and Festival Shop can be accessed "

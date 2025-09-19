@@ -5,7 +5,8 @@ from sqlalchemy import (
     Sequence,
     select,
     and_,
-    insert
+    insert,
+    update
 )
 from sqlalchemy.orm import load_only
 
@@ -17,6 +18,8 @@ from data.mappings.erupe import (
 from data.mappings.custom.views import (
     CharacterDetails
 )
+
+from core.binary_handler import SaveData
 
 class CharactersBuilder():
     """Query builder class for Characters table."""
@@ -154,3 +157,78 @@ class CharactersBuilder():
             )
         ]
         await self.db.insert_objects(session, values)
+
+    async def get_character_save(
+        self,
+        session,
+        character_id: int
+    ) -> SaveData:
+        """Select character save data by id"""
+        stmt = select(
+            Characters
+        ).options(
+            load_only(
+                Characters.savedata,
+                Characters.decomyset,
+                Characters.hunternavi,
+                Characters.otomoairou,
+                Characters.partner,
+                Characters.platebox,
+                Characters.platedata,
+                Characters.platemyset,
+                Characters.rengokudata,
+                Characters.savemercenary,
+                Characters.skin_hist,
+                Characters.minidata,
+                Characters.scenariodata,
+                Characters.savefavoritequest
+            )
+        ).where(
+            Characters.id == character_id
+        )
+
+        row = await self.db.select_object(session, stmt)
+        return SaveData(
+            row.savedata,
+            row.decomyset,
+            row.hunternavi,
+            row.otomoairou,
+            row.partner,
+            row.platebox,
+            row.platedata,
+            row.platemyset,
+            row.rengokudata,
+            row.savemercenary,
+            row.skin_hist,
+            row.minidata,
+            row.scenariodata,
+            row.savefavoritequest
+        )
+
+    async def update_character_save(
+        self,
+        session,
+        character_id: int,
+        savedata: bytes
+    ) -> (int | None):
+        """Update character save data by id"""
+        stmt = (
+            update(Characters)
+            .where(Characters.id == character_id)
+            .values(savedata=savedata)
+        )
+        return await self.db.update_objects(session, stmt)
+
+    async def update_character_name(
+        self,
+        session,
+        character_id: int,
+        character_name: str
+    ) -> (int | None):
+        """Update character name by id"""
+        stmt = (
+            update(Characters)
+            .where(Characters.id == character_id)
+            .values(name=character_name)
+        )
+        return await self.db.update_objects(session, stmt)

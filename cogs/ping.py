@@ -8,7 +8,7 @@ from discord import app_commands
 from settings import CONFIG
 from core import BaseCog
 from core.exceptions import (
-     MissingPermissions
+    MissingPermissions
 )
 
 class Ping(BaseCog):

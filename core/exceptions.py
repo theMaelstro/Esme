@@ -1,6 +1,9 @@
 """
 Provides custom Exception subclasses.
 """
+class CommandOnCooldown(Exception):
+    """Command action is on cooldown."""
+
 class UserEmptyField(Exception):
     """One of empty fields is empty."""
 

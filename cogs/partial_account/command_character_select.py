@@ -20,7 +20,7 @@ from core.exceptions import (
 
 class CharacterSelect():
     def __init__(self):
-        self.characters_builder = CharactersBuilder()
+        self.character_builder = CharactersBuilder()
         self.discord_builder = DiscordBuilder()
 
     async def character_select(self, interaction: discord.Interaction):
@@ -47,7 +47,7 @@ class CharacterSelect():
                     )
 
                 # Get character list.
-                elements = await self.characters_builder.select_characters_by_user_id(
+                elements = await self.character_builder.select_characters_by_user_id(
                     session,
                     discord_user.user_id
                 )
