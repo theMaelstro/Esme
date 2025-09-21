@@ -83,7 +83,10 @@ class ActiveFeature(BaseCog):
                 valid_features = []
                 features_str = ""
                 for feature in reversed(features):
-                    if ((now - feature.start_time).total_seconds() / 3600) <= 24:
+                    if (
+                        ((now - feature.start_time).total_seconds() / 3600)
+                        + CONFIG.erupe.timestamp_offset
+                    <= 24):
                         valid_features.append(feature)
 
                 for k, feature in enumerate(valid_features):
