@@ -85,8 +85,7 @@ class ActiveFeature(BaseCog):
                 for feature in reversed(features):
                     if (
                         ((now - feature.start_time).total_seconds() / 3600)
-                        + CONFIG.erupe.timestamp_offset
-                    <= 24):
+                    <= 24 + CONFIG.erupe.timestamp_offset):
                         valid_features.append(feature)
 
                 for k, feature in enumerate(valid_features):
