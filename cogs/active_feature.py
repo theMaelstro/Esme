@@ -1,6 +1,6 @@
 """Extension module for example Ping Cog with response interaction."""
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import discord
 from discord.ext import commands
@@ -77,27 +77,35 @@ class ActiveFeature(BaseCog):
                 if not features:
                     raise CoroutineFailed()
 
-                features_current = f"{features[-1].featured:b}".zfill(14)
-                #features_current_time = round((features[-1].start_time).timestamp())
-                features_next = f"{features[-2].featured:b}".zfill(14)
-                #features_next_time = round((features[-2].start_time).timestamp())
-                features_next2 = f"{features[-3].featured:b}".zfill(14)
-                #features_next_time2 = round((features[-3].start_time).timestamp())
-                logging.info("%s: %s", interaction.user.id, "Ping!")
+                now = datetime.now(timezone.utc)
                 emojis = await self.client.fetch_application_emojis()
                 emojis = ApplicationEmojis(emojis)
+                valid_features = []
+                features_str = ""
+                for feature in reversed(features):
+                    if ((now - feature.start_time).total_seconds() / 3600) <= 24:
+                        valid_features.append(feature)
+
+                for k, feature in enumerate(valid_features):
+                    my_f = f"{feature.featured:b}".zfill(14)
+                    if k == 0:
+                        features_str += (
+                            "## Active Feature\n"
+                            f"# {get_weapon_emoji_string(emojis, my_f)}\n"
+                        )
+                    if k == 1:
+                        features_str += (
+                            "## Next Feature\n"
+                            f"# {get_weapon_emoji_string(emojis, my_f)}\n"
+                        )
+                    if k > 1:
+                        features_str += (
+                            f"# {get_weapon_emoji_string(emojis, my_f)}\n"
+                        )
+                logging.info("%s: %s", interaction.user.id, "Active Feature opened.")
                 await interaction.response.send_message(
                     ephemeral=True,
-                    content=(
-                        "## Active Feature\n"
-                        #f"<t:{features_current_time}:R>\n"
-                        f"# {get_weapon_emoji_string(emojis, features_current)}\n"
-                        "## Next Feature\n"
-                        #f"<t:{features_next_time}:R>\n"
-                        f"# {get_weapon_emoji_string(emojis, features_next)}\n"
-                        #f"<t:{features_next_time2}:R>\n"
-                        f"# {get_weapon_emoji_string(emojis, features_next2)}\n"
-                    )
+                    content=features_str
                 )
 
         except (
