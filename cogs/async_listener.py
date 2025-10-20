@@ -210,10 +210,7 @@ class AsyncListener(BaseCog):
                 )
             payload =json.loads(notification.payload)
             if payload['event_type'] == 'festa':
-                utc_time_now = (
-                    datetime.now(timezone.utc)
-                    + timedelta(hours=CONFIG.erupe.timestamp_offset)
-                )
+                utc_time_now = datetime.now(timezone.utc)
                 events = {
                     "Festi Registration Week": await guild.create_scheduled_event(
                         name = f"Hunter Festival #{payload['id']}: Registration",
