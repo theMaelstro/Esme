@@ -25,7 +25,7 @@ from core.exceptions import (
 
 def get_weapon_emoji_string(
     emojis: ApplicationEmojis,
-    mask: list
+    mask: str
 ) -> str:
     return (
         f"{emojis.get_sword_shield(mask[9])}"
@@ -83,9 +83,10 @@ class ActiveFeature(BaseCog):
                 valid_features = []
                 features_str = ""
                 for feature in reversed(features):
+                    logging.info("%s: %s | %s", "TIMECHECK", feature.start_time, ((now - feature.start_time).total_seconds() / 3600))
                     if (
-                        ((now - feature.start_time).total_seconds() / 3600)
-                    <= 24 + CONFIG.erupe.timestamp_offset):
+                        ((now - feature.start_time).total_seconds() / 3600) - CONFIG.erupe.timestamp_offset
+                    <= 24):
                         valid_features.append(feature)
 
                 for k, feature in enumerate(valid_features):
