@@ -1,4 +1,5 @@
 """Extension module for GuildPoogie Cog."""
+import traceback
 import logging
 
 import discord
@@ -95,7 +96,7 @@ class GuildPoogie():
         except (
             Exception
         ) as e:
-            logging.error("%s: %s", interaction.user.id, e)
+            logging.error("%s: %s %s %s", interaction.user.id, type(e), e, traceback.format_exc())
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Poogie Update Failed",

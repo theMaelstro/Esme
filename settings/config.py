@@ -2,6 +2,7 @@
 Config module contains Config class
 with methods to handle reading and writing of config.ini file.
 """
+import traceback
 import os.path
 import json
 import configparser
@@ -38,6 +39,14 @@ class CommandValidated:
 class Toggle:
     """Class representing single config toggle settings."""
     enabled: bool
+
+@dataclasses.dataclass
+class Course:
+    """Class representing single config course settings."""
+    name: str
+    enabled: bool
+    description: str
+    mask: int
 
 @dataclasses.dataclass
 class Listeners:
@@ -106,9 +115,11 @@ class Commands:
     account_character_backup: CommandValidated
     account_character_create: CommandSimple
     account_character_select: CommandSimple
+    account_course: CommandSimple
     account_psn_clear: CommandSimple
     account_set_psn: CommandSimple
     account_token_reset: CommandSimple
+    account_change_password: ElevatedCommand
     features: CommandSimple
     guild_application_list: CommandSimple
     guild_application_resolve: CommandSimple
@@ -132,6 +143,7 @@ class Features:
     listeners: Listeners
     tasks: Tasks
     cogs_groups: Cogs
+    courses: list[Course]
 
 class Config:
     """Config class object."""
@@ -191,9 +203,11 @@ class Config:
                 'account_card': {'enabled': True, 'cooldown': 0.0, 'permission': None, 'admin_permission': 0},
                 'account_character_create': {'enabled': True, 'cooldown': 0.0, 'permission': None},
                 'account_character_select': {'enabled': True, 'cooldown': 0.0, 'permission': None},
+                'account_course': {'enabled': True, 'cooldown': 0.0, 'permission': None},
                 'account_psn_clear': {'enabled': True, 'cooldown': 0.0, 'permission': None},
                 'account_set_psn': {'enabled': True, 'cooldown': 0.0, 'permission': None},
                 'account_token_reset': {'enabled': True, 'cooldown': 0.0, 'permission': None},
+                'account_change_password': {'enabled': True, 'cooldown': 0.0, 'permission': None, 'admin_permission': 0},
                 'features': {'enabled': True, 'cooldown': 0.0, 'permission': None},
                 'guild_application_list': {'enabled': True, 'cooldown': 0.0, 'permission': None},
                 'guild_application_resolve': {'enabled': True, 'cooldown': 0.0, 'permission': None},
@@ -222,11 +236,33 @@ class Config:
                     'players_count': False
                 },
                 'Cogs': {
-                    'group_account': {
-                        'enabled': True
-                    },
+                    'group_account': {'enabled': True},
                     'group_guild': {'enabled': True},
-                }
+                },
+                "Courses": [
+                    {"name": "Trial", "enabled": False, "description": "TEST", "mask": 1},
+                    {"name": "HunterLife", "enabled": True, "description": "Basic subscription required to play the game.", "mask": 2},
+                    {"name": "Extra", "enabled": True, "description": "Additional Extra Item Box and monthly Ultra Lucky Charm, Carving Charms.", "mask": 3},
+                    {"name": "ExtraB", "enabled": False, "description": "TEST", "mask": 4},
+                    {"name": "Mobile", "enabled": False, "description": "TEST", "mask": 5},
+                    {"name": "Premium", "enabled": True, "description": "Free daily Cravan Jewel change. Increased Money, GSR and GR gain.", "mask": 6},
+                    {"name": "ExtraC", "enabled": False, "description": "TEST", "mask": 7},
+                    {"name": "Assist", "enabled": False, "description": "Access to Legendary Rastas, Legendary Poogie, additional Partnya Reward and Inventory Slots.", "mask": 8},
+                    {"name": "N", "enabled": False, "description": "TEST", "mask": 9},
+                    {"name": "Hiden", "enabled": True, "description": "Additional Weapon Proofs and Mission Accomplished Certificate.", "mask": 10},
+                    {"name": "HunterSupport", "enabled": False, "description": "TEST", "mask": 11},
+                    {"name": "NBoost", "enabled": False, "description": "Increased NPoint, Transcendence EXP, GRP gain. Access to Hunter Gem skill at GR1.", "mask": 12},
+                    {"name": "DEBUG", "enabled": False, "description": "TEST", "mask": 20},
+                    {"name": "COG_LINK_EXPIRED", "enabled": False, "description": "TEST", "mask": 21},
+                    {"name": "360_GOLD", "enabled": False, "description": "TEST", "mask": 22},
+                    {"name": "PS3_TROP", "enabled": False, "description": "TEST", "mask": 23},
+                    {"name": "COG", "enabled": False, "description": "TEST", "mask": 24},
+                    {"name": "CAFE_SP", "enabled": False, "description": "TEST", "mask": 25},
+                    {"name": "NetCafe", "enabled": True, "description": "Gain access to unique shop and rewards for playtime.", "mask": 26},
+                    {"name": "HLRenewing", "enabled": False, "description": "TEST", "mask": 27},
+                    {"name": "EXRenewing", "enabled": False, "description": "TEST", "mask": 28},
+                    {"name": "Free", "enabled": False, "description": "TEST", "mask": 29}
+                ]
             }
         }
 
@@ -243,7 +279,7 @@ class Config:
             )
 
         except Exception as e:
-            logging.error("CONFIG CREATE: %s", e)
+            logging.error("Failed to create config: %s %s %s", type(e), e, traceback.format_exc())
 
     def read_config(self):
         """Read config."""
@@ -321,6 +357,11 @@ class Config:
                     my_json['Commands']['account_character_select']['permission']
                 ),
                 CommandSimple(
+                    my_json['Commands']['account_course']['enabled'],
+                    my_json['Commands']['account_course']['cooldown'],
+                    my_json['Commands']['account_course']['permission']
+                ),
+                CommandSimple(
                     my_json['Commands']['account_psn_clear']['enabled'],
                     my_json['Commands']['account_psn_clear']['cooldown'],
                     my_json['Commands']['account_psn_clear']['permission']
@@ -334,6 +375,12 @@ class Config:
                     my_json['Commands']['account_token_reset']['enabled'],
                     my_json['Commands']['account_token_reset']['cooldown'],
                     my_json['Commands']['account_token_reset']['permission']
+                ),
+                ElevatedCommand(
+                    my_json['Commands']['account_change_password']['enabled'],
+                    my_json['Commands']['account_change_password']['cooldown'],
+                    my_json['Commands']['account_change_password']['permission'],
+                    my_json['Commands']['account_change_password']['admin_permission']
                 ),
                 CommandSimple(
                     my_json['Commands']['features']['enabled'],
@@ -444,11 +491,15 @@ class Config:
                     Toggle(
                         my_json['Features']['Cogs']['group_guild']['enabled']
                     )
-                )
+                ),
+                [
+                    Course(element['name'], element['enabled'], element['description'], element['mask'])
+                    for element in my_json['Features']['Courses']
+                ]
             )
 
         except Exception as e:
-            logging.error("CONFIG CREATE: %s", e)
+            logging.error("Failed to create config: %s %s %s", type(e), e, traceback.format_exc())
 
     def init_config(self):
         """Initialize config, check if valid config exists."""
@@ -487,7 +538,7 @@ class Config:
             return False
 
         except Exception as e:
-            logging.error("Permission Error: %s", e)
+            logging.error("Failed to read permissions from config: %s %s %s", type(e), e, traceback.format_exc())
             return False
 
 CONFIG = Config()

@@ -1,7 +1,7 @@
 """
 BCrypt wrapper module.
 """
-
+import traceback
 import logging
 
 import bcrypt
@@ -18,5 +18,5 @@ async def check_password(password: str, stored_hash: str):
             return True
 
     except Exception as e:
-        logging.error("BCRYPT: %s", e)
+        logging.error("BCrypt Error: %s %s %s", type(e), e, traceback.format_exc())
     return False

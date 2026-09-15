@@ -1,4 +1,5 @@
 """Extension module for GuildList Cog."""
+import traceback
 import logging
 import asyncio
 import re
@@ -53,13 +54,13 @@ class LiveChatTask(BaseCog):
                 return web.Response(status=200, text="OK")
                 #raise web.HTTPInternalServerError(text='JSONError')
             except aiohttp.ClientError as e:
-                logging.info("aiohttp client error: %s", e)
+                logging.warning("aiohttp client error: %s", e)
             except aiohttp.http.HttpProcessingError as e:
-                logging.info("aiohttp processing error: %s", e)
+                logging.warning("aiohttp processing error: %s", e)
             except asyncio.TimeoutError as e:
-                logging.info("asyncio timeout error: %s", e)
+                logging.warning("asyncio timeout error: %s", e)
             except Exception as e:
-                logging.info("generic error: %s", e)
+                logging.error("Webserver Handler Failed: %s %s %s", type(e), e, traceback.format_exc())
 
         app = web.Application()
         app.router.add_post('/chat/', handler)
@@ -84,23 +85,24 @@ class LiveChatTask(BaseCog):
                 await self.chat_client.close()
                 return response.status
         except aiohttp.ClientConnectorError as e:
-            logging.info("aiohttp connection error: %s", e)
+            logging.warning("aiohttp connection error: %s", e)
             await self.chat_client.close()
             return False
         except aiohttp.ClientError as e:
-            logging.info("aiohttp client error: %s", e)
+            logging.warning("aiohttp client error: %s", e)
             await self.chat_client.close()
             return web.Response(status=400, text="Bad Request")
         except aiohttp.http.HttpProcessingError as e:
-            logging.info("aiohttp processing error: %s", e)
+            logging.warning("aiohttp processing error: %s", e)
             await self.chat_client.close()
             return web.Response(status=400, text="Bad Request")
         except asyncio.TimeoutError as e:
-            logging.info("asyncio timeout error: %s", e)
+            logging.warning("asyncio timeout error: %s", e)
             await self.chat_client.close()
             return web.Response(status=408, text="Request Timeout")
         except Exception as e:
-            logging.info("generic error: %s", e)
+            logging.error("generic error: %s", e)
+            logging.error("Webclient Handler Failed: %s %s %s", type(e), e, traceback.format_exc())
             await self.chat_client.close()
             return False
 

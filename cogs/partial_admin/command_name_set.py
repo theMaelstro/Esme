@@ -21,7 +21,7 @@ from core.binary_handler import (
 )
 
 class CharacterNameSet():
-    """Cog handling reading road progress data."""
+    """Cog handling changing name of player character."""
     def __init__(self):
         self.character_builder = CharactersBuilder()
 
@@ -31,7 +31,7 @@ class CharacterNameSet():
         character_id: int,
         name: str
     ):
-        """Check rengoku save file."""
+        """Change character name."""
         try:
             if not CONFIG.check_permission(
                 CONFIG.commands.road_check.permission,
@@ -84,7 +84,8 @@ class CharacterNameSet():
             )
 
         except (
-            InvalidArgument
+            InvalidArgument,
+            MissingPermissions
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(

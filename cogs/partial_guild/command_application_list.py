@@ -420,7 +420,7 @@ class ApplicationList():
         except (
             Exception
         ) as e:
-            logging.error("%s: %s", interaction.user.id, traceback.format_exc())
+            logging.error("%s: %s %s %s", interaction.user.id, type(e), e, traceback.format_exc())
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Application Process Failed",

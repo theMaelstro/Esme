@@ -2,6 +2,7 @@
 PSQL Connector
 """
 from __future__ import annotations
+import traceback
 import logging
 import sys
 
@@ -43,9 +44,21 @@ class Connector:
             )
 
             # Create engine.
-            self.engine = create_async_engine(self.url_object, echo=False, hide_parameters=True)
+            self.engine = create_async_engine(
+                self.url_object,
+                pool_pre_ping=True,
+                echo=False,
+                hide_parameters=True
+            )
 
             # Connect to database
+            async with self.engine.begin() as conn:
+                # Attempt to create discord registration table.
+                logging.info("Checking if Discord table exists.")
+                await conn.run_sync(Discord.__table__.create)
+                logging.info("Discord Table created because it was not found.")
+                await conn.commit()
+
             async with self.engine.begin() as conn:
                 # Attempt to create Character Details view.
                 await conn.execute(text(CharacterDetails.__query__))
@@ -70,13 +83,6 @@ class Connector:
                 logging.info("Guild Recruitment Details View prepared.")
                 await conn.commit()
 
-            async with self.engine.begin() as conn:
-                # Attempt to create discord registration table.
-                logging.info("Checking if Discord table exists.")
-                await conn.run_sync(Discord.__table__.create)
-                logging.info("Discord Table created because it was not found.")
-                await conn.commit()
-
         except exc.ProgrammingError as e:
             if isinstance(e.orig.__cause__, DuplicateTableError):
                 logging.info("Discord table exists, skipping.")
@@ -87,7 +93,7 @@ class Connector:
             logging.error(e)
 
         except Exception as e:
-            logging.critical("Unhandled database error. Could not connect to postgres: %s", e)
+            logging.critical("Unhandled database error. Could not connect to postgres: %s %s %s", type(e), e, traceback.format_exc())
             sys.exit(1)
 
         finally:

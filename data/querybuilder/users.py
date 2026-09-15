@@ -65,6 +65,20 @@ class UserBuilder():
         )
         return await self.db.update_objects(session, stmt)
 
+    async def update_password(
+        self,
+        session,
+        user_id: int,
+        password_hash: str
+    ) -> (int | None):
+        """Update user password hash."""
+        stmt = (
+            update(Users)
+            .where(Users.id == user_id)
+            .values(password=password_hash)
+        )
+        return await self.db.update_objects(session, stmt)
+
     async def clear_user_psn(
         self,
         session,
@@ -75,5 +89,41 @@ class UserBuilder():
             update(Users)
             .where(Users.id == user_id)
             .values(psn_id=None)
+        )
+        return await self.db.update_objects(session, stmt)
+
+    async def select_user_rights(self, session, user_id: int):
+        """Select user rights."""
+        stmt = select(Users).options(
+            load_only(Users.id, Users.rights)
+        ).where(Users.id == user_id)
+        rows = await self.db.select_object(session, stmt)
+        return rows
+
+    async def update_user_rights(
+        self,
+        session,
+        user_id: int,
+        user_rights: int
+    ) -> (int | None):
+        """Update user rights by user_id."""
+        stmt = (
+            update(Users)
+            .where(Users.id == user_id)
+            .values(rights=user_rights)
+        )
+        return await self.db.update_objects(session, stmt)
+
+    async def update_user_password(
+        self,
+        session,
+        user_id: int,
+        phash: str
+    ) -> (int | None):
+        """Update user password by user_id."""
+        stmt = (
+            update(Users)
+            .where(Users.id == user_id)
+            .values(password=phash)
         )
         return await self.db.update_objects(session, stmt)

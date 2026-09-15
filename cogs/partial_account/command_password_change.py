@@ -1,63 +1,58 @@
-"""Extension module for SetPsn Cog."""
+"""Extension module for PasswordChange Cog."""
 import traceback
 import logging
 
 import discord
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from data.connector import CONN
+from data import (
+    DiscordBuilder,
+    UserBuilder
+)
 
 from settings import CONFIG
-from data.connector import CONN
-from data import UserBuilder, DiscordBuilder
 from core.exceptions import (
     CoroutineFailed,
     DiscordNotRegistered,
-    MissingPermissions,
-    PsnIDAlreadyRegistered
+    MissingPermissions
 )
 
-async def m_set_psn(
+async def m_change_password(
     interaction: discord.Interaction,
+    member: discord.Member,
     user_builder: UserBuilder,
     discord_builder: DiscordBuilder,
-    psn_name: str
+    password_hash: str
 ):
-    """Update user bound psn id."""
+    """Change user password."""
     try:
         # Create session
         async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
         async with async_session() as session:
             # Check if user is registered.
             discord_user = await discord_builder.select_discord_user(
-                session, str(interaction.user.id)
+                session, str(interaction.user.id) if not member else str(member.id)
             )
+
             if discord_user is None:
                 raise DiscordNotRegistered(
                     "No account registered for this discord user."
                 )
 
-            user = await user_builder.select_user_psn(
-                session,
-                psn_name
-            )
-            if user:
-                if not user.id == discord_user.user_id:
-                    raise PsnIDAlreadyRegistered(
-                        "Psn ID already registered. Please use different Psn ID."
-                    )
-
-            if not await user_builder.update_user_psn(
+            # Update Password.
+            if not await user_builder.update_password(
                 session,
                 discord_user.user_id,
-                psn_name
+                password_hash
             ):
                 raise CoroutineFailed(
                     "Could not update table."
                 )
 
-            logging.info("%s: %s", interaction.user.id, "Token Reset")
+            logging.info("%s: %s", interaction.user.id, "Password Updated")
             await interaction.response.send_message(
                 embed=discord.Embed(
-                    title="Psn ID Updated.",
+                    title="Password Updated",
                     color=discord.Color.green()
                 ),
                 ephemeral=True
@@ -67,19 +62,18 @@ async def m_set_psn(
             await session.commit()
             await session.close()
 
-    except (
-        DiscordNotRegistered,
-        PsnIDAlreadyRegistered
-    ) as e:
-        logging.warning("%s: %s", interaction.user.id, e)
-        await interaction.response.send_message(
-            embed=discord.Embed(
-                title="Psn ID update failed.",
-                description=e,
-                color=discord.Color.red()
-            ),
-            ephemeral=True
-        )
+    #except (
+    #    TokenInvalid
+    #) as e:
+    #    logging.warning("%s: %s", interaction.user.id, e)
+    #    await interaction.response.send_message(
+    #        embed=discord.Embed(
+    #            title="Binding Failed",
+    #            description=e,
+    #            color=discord.Color.red()
+    #        ),
+    #        ephemeral=True
+    #    )
 
     except (
         CoroutineFailed
@@ -87,71 +81,80 @@ async def m_set_psn(
         logging.error("%s: %s", interaction.user.id, e)
         await interaction.response.send_message(
             embed=discord.Embed(
-                title="Psn ID update failed.",
+                title="Password Change Failed",
                 description="Internal Error.",
                 color=discord.Color.red()
             ),
             ephemeral=True
         )
 
-class ModalPsn(
+class ModalChangePassword(
     discord.ui.Modal,
-    title='Set PSN'
+    title='Change Password'
 ):
     """Discord Modal view class."""
     def __init__(
         self,
         user_builder: UserBuilder,
         discord_builder: DiscordBuilder,
+        member: discord.Member
     ):
         super().__init__()
         self.user_builder = user_builder
         self.discord_builder = discord_builder
-    psn = discord.ui.TextInput(
-        label='PSN ID',
-        placeholder='Type in your PSN ID...',
+        self.member = member
+    password_hash = discord.ui.TextInput(
+        label='Hash',
+        placeholder='Paste password hash...',
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        await m_set_psn(
+        await m_change_password(
             interaction,
+            self.member,
             self.user_builder,
             self.discord_builder,
-            self.psn.value
+            self.password_hash.value
         )
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
         logging.error("%s: %s %s %s", interaction.user.id, type(error), error, traceback.format_exc())
         await interaction.response.send_message(
             embed=discord.Embed(
-                title="Psn ID update failed.",
+                title="Password Change Failed",
                 color=discord.Color.red()
             ),
             ephemeral=True
         )
 
-class PsnSet():
-    """Cog handling setting and updating user psn id."""
+class PasswordChange():
+    """Invoke Modal for password change."""
     def __init__(self):
         self.user_builder = UserBuilder()
         self.discord_builder = DiscordBuilder()
 
-    async def psn_set(
-        self,
-        interaction: discord.Interaction
-    ):
-        """Update user bound psn id."""
+    async def change_password(self, interaction: discord.Interaction, member: discord.Member):
+        """Change user password."""
         try:
-            if not CONFIG.check_permission(
-                CONFIG.commands.account_set_psn.permission,
+            logging.info("%s: %s", "Member: ", member)
+            if member == None:
+                member = interaction.user
+            elevated = CONFIG.check_permission(
+                CONFIG.commands.account_card.admin_permission,
                 interaction.user
-            ):
+            )
+            permitted = CONFIG.check_permission(
+                CONFIG.commands.account_change_password.permission,
+                interaction.user
+            )
+            owner = interaction.user.id == member.id if member else False
+
+            if not (elevated or (permitted and owner)):
                 raise MissingPermissions(
                     f"{interaction.user.mention} is missing permissions to use command."
                 )
-
             await interaction.response.send_modal(
-                ModalPsn(self.user_builder, self.discord_builder)
+                ModalChangePassword(self.user_builder, self.discord_builder, member)
             )
 
         except (
@@ -160,7 +163,7 @@ class PsnSet():
             logging.warning("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
                 embed=discord.Embed(
-                    title="Psn Set Failed",
+                    title="Password Change Failed",
                     description=e,
                     color=discord.Color.red()
                 ),

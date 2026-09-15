@@ -1,4 +1,5 @@
 """Async Listener module with channel handlers for responding to notifiers."""
+import traceback
 import asyncio
 from datetime import datetime, timezone, timedelta
 import logging
@@ -60,7 +61,7 @@ class AsyncListener(BaseCog):
         except (
             Exception
         ) as e:
-            logging.error("Unhandled exception: %s", e)
+            logging.error("Discord Notification Exception: %s %s %s", type(e), e, traceback.format_exc())
 
     async def on_notification_guild_applications(
             self,
@@ -184,7 +185,7 @@ class AsyncListener(BaseCog):
         except (
             Exception
         ) as e:
-            logging.error("Unhandled exception: %s", e)
+            logging.error("Guild Notification Exception: %s %s %s", type(e), e, traceback.format_exc())
 
     async def on_notification_events(
             self,
@@ -327,7 +328,7 @@ class AsyncListener(BaseCog):
         except (
             Exception
         ) as e:
-            logging.error("Unhandled exception: %s", e)
+            logging.error("Event Notification Exception: %s %s %s", type(e), e, traceback.format_exc())
 
     async def start_listeners(self) -> dict:
         """Prepare and start listener tasks."""
@@ -379,7 +380,7 @@ class AsyncListener(BaseCog):
                 logging.info("Notifiers prepared")
 
             except Exception as e:
-                logging.error("Failed to prep notifiers: %s", e)
+                logging.error("Failed to prep notifiers: %s %s %s", type(e), e, traceback.format_exc())
 
             finally:
                 await session.close()
@@ -429,7 +430,7 @@ class AsyncListener(BaseCog):
             logging.info("Listener Started.")
 
         except Exception as e:
-            logging.error("Could not start listener: %s", e)
+            logging.error("Could not start listener: %s %s %s", type(e), e, traceback.format_exc())
 
         return await super().cog_load()
 
@@ -441,7 +442,7 @@ class AsyncListener(BaseCog):
                 logging.info("Listener Canceled Succesfuly: %s", key)
 
         except Exception as e:
-            logging.error("Could not cancel listener: %s", e)
+            logging.error("Could not cancel listener: %s %s %s", type(e), e, traceback.format_exc())
 
         return await super().cog_unload()
 

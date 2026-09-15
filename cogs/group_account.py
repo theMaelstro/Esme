@@ -1,3 +1,5 @@
+from typing import Optional
+
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -12,6 +14,7 @@ from .partial_account import (
     CharacterCreate,
     CharacterSelect,
     CharacterBackup,
+    PasswordChange,
     PsnClear,
     PsnSet,
     TokenReset
@@ -27,6 +30,13 @@ class AccountCog(BaseCog):
         )
         self.app_card.error(self.on_account_error)
         self.client.tree.add_command(self.app_card)
+
+        self.app_password = app_commands.ContextMenu(
+            name='Change Password',
+            callback = self.admin_password_change_app,
+        )
+        self.app_password.error(self.on_account_error)
+        self.client.tree.add_command(self.app_password)
 
     group_account = app_commands.Group(
         name="account",
@@ -49,6 +59,11 @@ class AccountCog(BaseCog):
     )
     group_token = app_commands.Group(
         name="token",
+        parent = group_account,
+        description="..."
+    )
+    group_password = app_commands.Group(
+        name="password",
         parent = group_account,
         description="..."
     )
@@ -78,6 +93,31 @@ class AccountCog(BaseCog):
         """Display your character information card."""
         partial_card = Card()
         await partial_card.card(interaction, member)
+
+    @group_password.command(name="change")
+    @app_commands.checks.cooldown(
+        1,
+        CONFIG.commands.account_change_password.cooldown,
+        key=lambda i: (i.guild_id, i.user.id)
+    )
+    async def change_password(
+        self,
+        interaction: discord.Interaction,
+        member: Optional[discord.Member]
+    ) -> None:
+        """Change user password. Defaults to yourself if no member provided."""
+        partial_card = PasswordChange()
+        await partial_card.change_password(interaction, member)
+
+    # Password Change Application Command
+    async def admin_password_change_app(
+            self,
+            interaction: discord.Interaction,
+            member: discord.Member
+    ):
+        """Change user password."""
+        partial_passchange = PasswordChange()
+        await partial_passchange.change_password(interaction, member)
 
     @group_psn.command(name="set")
     @app_commands.checks.cooldown(

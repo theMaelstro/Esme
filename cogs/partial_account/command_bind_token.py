@@ -1,4 +1,5 @@
 """Extension module for AccountBindToken Cog."""
+import traceback
 import logging
 
 import discord
@@ -127,7 +128,7 @@ class ModalBindToken(
         )
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
-        logging.error("%s: %s %s %s", interaction.user.id, type(error), error, error.__traceback__)
+        logging.error("%s: %s %s %s", interaction.user.id, type(error), error, traceback.format_exc())
         await interaction.response.send_message(
             embed=discord.Embed(
                 title="Binding Failed",
