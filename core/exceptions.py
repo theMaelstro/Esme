@@ -113,3 +113,6 @@ class UsersAreEqual(Exception):
 
 class MissingGuildApplications(Exception):
     """No Guild Applications found."""
+
+class IncorrectPasswordHash(Exception):
+    """Incorrect password hash."""

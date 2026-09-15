@@ -14,6 +14,7 @@ from settings import CONFIG
 from core.exceptions import (
     CoroutineFailed,
     DiscordNotRegistered,
+    IncorrectPasswordHash,
     MissingPermissions
 )
 
@@ -38,6 +39,16 @@ async def m_change_password(
                 raise DiscordNotRegistered(
                     "No account registered for this discord user."
                 )
+
+            split_hash = password_hash.split("$")
+            if (
+                len(split_hash) < 4
+                or split_hash[1] != "2a"
+                or int(split_hash[2]) < 10
+                or len(split_hash[3]) < 53
+            ):
+
+                raise IncorrectPasswordHash()
 
             # Update Password.
             if not await user_builder.update_password(
