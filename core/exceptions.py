@@ -116,3 +116,12 @@ class MissingGuildApplications(Exception):
 
 class IncorrectPasswordHash(Exception):
     """Incorrect password hash."""
+
+class EmptyContent(Exception):
+    """Parsed username or message content is empty or consists of special characters in its entirety."""
+
+class HTTPServerUnreachable(Exception):
+    """HTTP Server did not respond."""
+
+class InvalidChannel(Exception):
+    """Command used in invalid channel."""

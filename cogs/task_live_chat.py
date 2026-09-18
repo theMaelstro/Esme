@@ -15,6 +15,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from core import BaseCog
 from core.exceptions import (
+    EmptyContent,
+    HTTPServerUnreachable,
+    InvalidChannel,
+    MissingPermissions,
     SettingNotConfigured
 )
 
@@ -128,99 +132,173 @@ class LiveChatTask(BaseCog):
 
     async def send_message(self):
         """Send queued message to server."""
-        logging.info("Queued Messages: %s.", len(self.queued_message_pool))
+        logging.info("Queued Messages: %s", len(self.queued_message_pool))
         bottom_stack = self.queued_message_pool.pop(0)
-        message: discord.Message = bottom_stack['message']
-        if (
-            response := await self.webclient(
-                bottom_stack['channel'],
-                bottom_stack['player'],
-                bottom_stack['content'],
-                "normal"
+        interaction: discord.Interaction = bottom_stack['message']
+        try:
+            if (
+                response := await self.webclient(
+                    bottom_stack['channel'],
+                    bottom_stack['player'],
+                    bottom_stack['content'],
+                    "normal"
+                )
+            ) != web.HTTPOk.status_code:
+                raise HTTPServerUnreachable(
+                    """Server did not respond.""",
+                    response
+                )
+
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title='Said:',
+                    description=f"```{bottom_stack['content']}```",
+                    color=discord.Color.green()
+                ).set_author(name=interaction.user, icon_url=interaction.user.display_avatar),
+                ephemeral=False
             )
-        ) != web.HTTPOk.status_code:
-            await message.channel.send(
+
+        except HTTPServerUnreachable as e:
+            logging.error("Message not sent: %s : %s", e, responses.get(response))
+            await interaction.followup.send(
                 embed=discord.Embed(
                     title="Warning",
                     description=(
-                            "Server did not respond.\n"
-                            f"```{bottom_stack['content']}```"
-                        ),
+                        f"{e}\n```{bottom_stack['content']}```"
+                    ),
                     color=discord.Color.red()
-                ).set_author(name=message.author, icon_url=message.author.display_avatar)
+                ).set_author(name=interaction.user, icon_url=interaction.user.display_avatar),
+                ephemeral=True
             )
-            logging.info(
-                "Message not sent, server does not respond: %s", responses.get(response)
+        except Exception as e:
+            logging.error("Message not sent: %s %s %s", type(e), e, traceback.format_exc())
+
+    @app_commands.command(
+        name="say",
+        description="Send message to ingame chat. Works only if used in Chat category channel."
+    )
+    @app_commands.checks.cooldown(
+        1,
+        CONFIG.commands.say.cooldown,
+        key=lambda i: (i.guild_id, i.user.id)
+    )
+    @app_commands.describe(message="Message to send.")
+    async def say(
+        self,
+        interaction: discord.Interaction,
+        message: app_commands.Range[str, 1, 92]
+    ):
+        """say!"""
+        try:
+            if not CONFIG.check_permission(
+                CONFIG.commands.say.permission,
+                interaction.user
+            ):
+                raise MissingPermissions(
+                    f"{interaction.user.mention} is missing permissions to use command."
+                )
+            await interaction.response.defer(ephemeral=True)
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title="Say",
+                    description="Processing Message.",
+                    color=discord.Color.blue()
+                ),
+                ephemeral=True
             )
 
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        if message.author.id != self.client.user.id:
-            if message.channel in self.channels:
-                channel_id = self.get_server_id_by_name(message.channel.name)
-                logging.info("Received Message: %s.", message.content)
-                player = f"{re.sub(r'[^A-Za-z0-9 ]+', '', message.author.display_name)}"
-                mentioned_user = re.compile(r'<@\d{16,20}>')
-                emoji = re.compile(r'<:\w+:\d{16,20}>')
-                content = message.content
+            if interaction.channel not in self.channels:
+                raise InvalidChannel(
+                    """Command used in invalid channel."""
+                )
+            channel_id = self.get_server_id_by_name(interaction.channel.name)
+            player = f"{re.sub(r'[^A-Za-z0-9 ]+', '', interaction.user.display_name)}"
+            mentioned_user = re.compile(r'<@\d{16,20}>')
+            emoji = re.compile(r'<:\w+:\d{16,20}>')
+            content = message
 
-                # User mentions
-                while (mu := mentioned_user.search(content)) is not None:
-                    raw_mention = mu.group()
-                    user_id = re.sub("[^0-9]", "", raw_mention)
-                    user_mention: discord.User = message.guild.get_member(int(user_id))
-                    if user_mention is not None:
-                        content = content.replace(raw_mention, user_mention.display_name)
-                    else:
-                        content = content.replace(raw_mention, "mentioned")
+            # User mentions
+            while (mu := mentioned_user.search(content)) is not None:
+                raw_mention = mu.group()
+                user_mention: discord.User = interaction.user
+                if user_mention is not None:
+                    content = content.replace(raw_mention, user_mention.display_name)
+                else:
+                    content = content.replace(raw_mention, "mentioned")
 
-                # Emojis
-                while (me := emoji.search(content)) is not None:
-                    raw_mention = me.group()
-                    content = content.replace(raw_mention, raw_mention.split(":")[1])
+            # Emojis
+            while (me := emoji.search(content)) is not None:
+                raw_mention = me.group()
+                content = content.replace(raw_mention, raw_mention.split(":")[1])
 
-                content = " ".join(
-                    f"{re.sub(
-                        r'[^A-Za-z0-9 ]+',
-                        '',
-                        content
-                    )}".split()
+            content = " ".join(
+                f"{re.sub(
+                    r'[^A-Za-z0-9 ]+',
+                    '',
+                    content
+                )}".split()
+            )
+
+            if player.strip(" ") == "" or content.strip(" ") == "":
+                raise EmptyContent(
+                    """Parsed username or message content is empty or consists of special characters in its entirety."""
                 )
 
-                if player.strip(" ") == "" or content.strip(" ") == "":
-                    await message.channel.send(
-                        embed=discord.Embed(
-                            title="Warning",
-                            description= (
-                                "Message was not sent.\n"
-                                "Check if your server name or message content is"
-                                " not made up of just special characters."
-                            ),
-                            color=discord.Color.red()
-                        ).set_author(name=message.author, icon_url=message.author.display_avatar)
-                    )
-                    return
-                if len(content) > 92:
-                    content = content[:92]
-                    await message.channel.send(
-                        embed=discord.Embed(
-                            title="Warning",
-                            description= (
-                                "Parsed message is too long.\n"
-                                "Slice will be used.\n"
-                                f"```{content}```"
-                            ),
-                            color=discord.Color.blue()
-                        ).set_author(name=message.author, icon_url=message.author.display_avatar)
-                    )
+            if len(content) > 92:
+                content = content[:92]
+                await interaction.followup.send(
+                    embed=discord.Embed(
+                        title="Say",
+                        description="Message too long, trimmed one will be used.",
+                        color=discord.Color.blue()
+                    ),
+                    ephemeral=True
+                )
 
-                self.queued_message_pool.append(
-                {
-                    "channel": channel_id,
-                    "player": player,
-                    "content": content,
-                    "message": message
-                })
+            self.queued_message_pool.append(
+            {
+                "channel": channel_id,
+                "player": player,
+                "content": content,
+                "message": interaction
+            })
+
+        except (
+            EmptyContent,
+            InvalidChannel,
+            MissingPermissions
+        ) as e:
+            logging.warning("%s: %s", interaction.user.id, e)
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title="Message Not Sent",
+                    description=e,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
+        except (
+            Exception
+        ) as e:
+            logging.error("Message not sent: %s %s %s", type(e), e, traceback.format_exc())
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title="Message Not Sent",
+                    description="Internal Error",
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
+    @say.error
+    async def on_say_error(
+        self,
+        interaction: discord.Interaction,
+        error: app_commands.AppCommandError
+    ):
+        """On cooldown send remaining time info message."""
+        await self.on_cooldown_response(interaction, error)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -281,7 +359,7 @@ class LiveChatTask(BaseCog):
     async def empty_pool(self):
         """Empty message pools."""
         if len(self.received_message_pool) > 0:
-            logging.info("Received Messages: %s.", len(self.received_message_pool))
+            logging.info("Received Messages: %s", len(self.received_message_pool))
             bottom_stack = self.received_message_pool.pop(0)
             await self.receive_message(
                 bottom_stack['channel'],

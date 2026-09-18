@@ -53,7 +53,7 @@ class Ping(BaseCog):
             logging.warning("%s: %s", interaction.user.id, e)
             await interaction.response.send_message(
                 embed=discord.Embed(
-                    title="Players Online Failed",
+                    title="Ping Failed",
                     description=e,
                     color=discord.Color.red()
                 ),

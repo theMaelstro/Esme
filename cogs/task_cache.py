@@ -37,24 +37,26 @@ class CacheUpdate(BaseCog):
             # Close Session
             await session.commit()
             await session.close()
-            cache.guilds = [
-                GuildRecruitment(
-                    guild.guild_id,
-                    guild.guild_name,
-                    guild.leader_name,
-                    guild.members
-                ) for guild in guilds
-            ]
-            cache.guild_character_details = [
-                GuildCharacterDetails(
-                    detail.guild_id,
-                    detail.discord_id,
-                    detail.character_id,
-                    detail.character_name,
-                    detail.order_index,
-                    detail.cid
-                ) for detail in guild_character_details
-            ]
+            if isinstance(guilds, list):
+                cache.guilds = [
+                    GuildRecruitment(
+                        guild.guild_id,
+                        guild.guild_name,
+                        guild.leader_name,
+                        guild.members
+                    ) for guild in guilds
+                ]
+            if isinstance(guild_character_details, list):
+                cache.guild_character_details = [
+                    GuildCharacterDetails(
+                        detail.guild_id,
+                        detail.discord_id,
+                        detail.character_id,
+                        detail.character_name,
+                        detail.order_index,
+                        detail.cid
+                    ) for detail in guild_character_details
+                ]
         logging.info("Cache Updated: %s.", self.__cog_name__)
 
     @commands.Cog.listener()

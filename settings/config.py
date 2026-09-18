@@ -136,6 +136,7 @@ class Commands:
     ping: CommandSimple
     players_online: CommandSimple
     road_check: CommandSimple
+    say: CommandSimple
 
 @dataclasses.dataclass
 class Features:
@@ -223,7 +224,8 @@ class Config:
                 'keyflag': {'enabled': True, 'cooldown': 0.0, 'permission': None},
                 'ping': {'enabled': True, 'cooldown': 0.0, 'permission': None},
                 'players_online': {'enabled': True, 'cooldown': 0.0, 'permission': None},
-                'road_check': {'enabled': True, 'cooldown': 0.0, 'permission': 0}
+                'road_check': {'enabled': True, 'cooldown': 0.0, 'permission': 0},
+                'say': {'enabled': True, 'cooldown': 0.0, 'permission': None}
             },
             'Features': {
                 'Listeners': {
@@ -461,6 +463,11 @@ class Config:
                     my_json['Commands']['road_check']['enabled'],
                     my_json['Commands']['road_check']['cooldown'],
                     my_json['Commands']['road_check']['permission']
+                ),
+                CommandSimple(
+                    my_json['Commands']['say']['enabled'],
+                    my_json['Commands']['say']['cooldown'],
+                    my_json['Commands']['say']['permission']
                 )
             )
 
@@ -499,7 +506,7 @@ class Config:
             )
 
         except Exception as e:
-            logging.error("Failed to create config: %s %s %s", type(e), e, traceback.format_exc())
+            logging.error("Failed to read config: %s %s %s", type(e), e, traceback.format_exc())
 
     def init_config(self):
         """Initialize config, check if valid config exists."""
