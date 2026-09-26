@@ -147,8 +147,7 @@ class PasswordChange():
     async def change_password(self, interaction: discord.Interaction, member: discord.Member):
         """Change user password."""
         try:
-            logging.info("%s: %s", "Member: ", member)
-            if member == None:
+            if member is None:
                 member = interaction.user
             elevated = CONFIG.check_permission(
                 CONFIG.commands.account_card.admin_permission,

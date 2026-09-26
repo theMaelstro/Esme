@@ -1,7 +1,7 @@
 """Query Builder module for Discord related queries."""
 from typing import Literal
 
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from sqlalchemy.orm import load_only
 
 from data.connector import CONN
@@ -29,6 +29,20 @@ class DiscordBuilder():
         ).where(Discord.discord_id == discord_id)
         discord = await self.db.select_object(session, stmt)
         return discord
+
+    async def delete_user(self, session, discord_pk: int):
+        """Delete registered user from database."""
+        stmt = (
+            delete(
+                Discord
+            ).where(
+                Discord.id == discord_pk
+            ).returning(
+                Discord.id
+            )
+        )
+        result = await self.db.select_object(session, stmt)
+        return result
 
     async def bind_user_old(
         self,
