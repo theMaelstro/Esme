@@ -137,6 +137,7 @@ class LiveChatTask(BaseCog):
         logging.info("Queued Messages: %s", len(self.queued_message_pool))
         bottom_stack = self.queued_message_pool.pop(0)
         interaction: discord.Interaction = bottom_stack['message']
+        message: discord.Message = bottom_stack['message']
         try:
             if (
                 response := await self.webclient(
@@ -151,29 +152,37 @@ class LiveChatTask(BaseCog):
                     response
                 )
 
-            await interaction.followup.send(
-                embed=discord.Embed(
-                    title='Said:',
-                    description=f"```{bottom_stack['content']}```",
-                    color=discord.Color.green()
-                ).set_author(name=interaction.user, icon_url=interaction.user.display_avatar),
-                ephemeral=False
-            )
+            if bottom_stack['interaction'] == 'command':
+                await message.channel.send(
+                    embed=discord.Embed(
+                        title='Said:',
+                        description=f"```{bottom_stack['content']}```",
+                        color=discord.Color.green()
+                    ).set_author(name=interaction.user, icon_url=interaction.user.display_avatar)
+                )
 
         except HTTPServerUnreachable as e:
             logging.error("Message not sent: %s : %s", e, responses.get(response))
-            await interaction.followup.send(
+            await message.channel.send(
                 embed=discord.Embed(
                     title="Warning",
                     description=(
                         f"{e}\n```{bottom_stack['content']}```"
                     ),
                     color=discord.Color.red()
-                ).set_author(name=interaction.user, icon_url=interaction.user.display_avatar),
-                ephemeral=True
+                )
             )
         except Exception as e:
             logging.error("Message not sent: %s %s %s", type(e), e, traceback.format_exc())
+            await message.channel.send(
+                embed=discord.Embed(
+                    title="Processing Failed",
+                    description=(
+                        "Internal Error."
+                    ),
+                    color=discord.Color.red()
+                )
+            )
 
     @tasks.loop(
         seconds=0.2,
@@ -214,7 +223,7 @@ class LiveChatTask(BaseCog):
                         ).set_author(name=message.author, icon_url=message.author.display_avatar)
                     )
                 else:
-                    logging.info("Received Message: %s.", message.content)
+                    logging.info("Received Message")
                     channel_id = self.get_server_id_by_name(message.channel.name)
 
                     player = f"{re.sub(r'[^A-Za-z0-9 ]+', '', message.author.display_name)}"
@@ -274,6 +283,7 @@ class LiveChatTask(BaseCog):
 
                     self.queued_message_pool.append(
                     {
+                        "interaction": "channel",
                         "channel": channel_id,
                         "player": player,
                         "content": content,
@@ -368,6 +378,7 @@ class LiveChatTask(BaseCog):
 
             self.queued_message_pool.append(
             {
+                "interaction": "command",
                 "channel": channel_id,
                 "player": player,
                 "content": content,
