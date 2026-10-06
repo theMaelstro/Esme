@@ -19,11 +19,13 @@ from core.exceptions import (
     HTTPServerUnreachable,
     InvalidChannel,
     MissingPermissions,
-    SettingNotConfigured
+    SettingNotConfigured,
+    TermsRejected
 )
 
 from data.connector import CONN
 from data import UniversalBuilder
+from data.cache import cache
 
 from settings import CONFIG
 
@@ -173,6 +175,111 @@ class LiveChatTask(BaseCog):
         except Exception as e:
             logging.error("Message not sent: %s %s %s", type(e), e, traceback.format_exc())
 
+    @tasks.loop(
+        seconds=0.2,
+        reconnect=True
+    )
+    async def empty_pool(self):
+        """Empty message pools."""
+        if len(self.received_message_pool) > 0:
+            logging.info("Received Messages: %s", len(self.received_message_pool))
+            bottom_stack = self.received_message_pool.pop(0)
+            await self.receive_message(
+                bottom_stack['channel'],
+                bottom_stack['player'],
+                bottom_stack['content']
+            )
+
+        if len(self.queued_message_pool) > 0:
+            if self.chat_client is not None:
+                if self.chat_client.closed:
+                    await self.send_message()
+            else:
+                await self.send_message()
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        """Catch messages from chat category."""
+        if message.author.id != self.client.user.id:
+            if message.channel in self.channels and self.client.intents.message_content is True:
+                if str(message.author.id) not in cache.terms_accepted:
+                    await message.channel.send(
+                        embed=discord.Embed(
+                            title="Message not sent",
+                            description= (
+                                "To be able to send messages review `/terms` command." +
+                                "\n\nUpdate can take up to 5 minutes."
+                            ),
+                            color=discord.Color.red()
+                        ).set_author(name=message.author, icon_url=message.author.display_avatar)
+                    )
+                else:
+                    logging.info("Received Message: %s.", message.content)
+                    channel_id = self.get_server_id_by_name(message.channel.name)
+
+                    player = f"{re.sub(r'[^A-Za-z0-9 ]+', '', message.author.display_name)}"
+                    mentioned_user = re.compile(r'<@\d{16,20}>')
+                    emoji = re.compile(r'<:\w+:\d{16,20}>')
+                    content = message.content
+
+                    # User mentions
+                    while (mu := mentioned_user.search(content)) is not None:
+                        raw_mention = mu.group()
+                        user_id = re.sub("[^0-9]", "", raw_mention)
+                        user_mention: discord.User = message.guild.get_member(int(user_id))
+                        if user_mention is not None:
+                            content = content.replace(raw_mention, user_mention.display_name)
+                        else:
+                            content = content.replace(raw_mention, "mentioned")
+
+                    # Emojis
+                    while (me := emoji.search(content)) is not None:
+                        raw_mention = me.group()
+                        content = content.replace(raw_mention, raw_mention.split(":")[1])
+
+                    content = " ".join(
+                        f"{re.sub(
+                            r'[^A-Za-z0-9 ]+',
+                            '',
+                            content
+                        )}".split()
+                    )
+
+                    if player.strip(" ") == "" or content.strip(" ") == "":
+                        await message.channel.send(
+                            embed=discord.Embed(
+                                title="Warning",
+                                description= (
+                                    "Message was not sent.\n"
+                                    "Check if your server name or message content is"
+                                    " not made up of just special characters."
+                                ),
+                                color=discord.Color.red()
+                            ).set_author(name=message.author, icon_url=message.author.display_avatar)
+                        )
+                        return
+                    if len(content) > 92:
+                        content = content[:92]
+                        await message.channel.send(
+                            embed=discord.Embed(
+                                title="Warning",
+                                description= (
+                                    "Parsed message is too long.\n"
+                                    "Slice will be used.\n"
+                                    f"```{content}```"
+                                ),
+                                color=discord.Color.blue()
+                            ).set_author(name=message.author, icon_url=message.author.display_avatar)
+                        )
+
+                    self.queued_message_pool.append(
+                    {
+                        "channel": channel_id,
+                        "player": player,
+                        "content": content,
+                        "message": message
+                    })
+
     @app_commands.command(
         name="say",
         description="Send message to ingame chat. Works only if used in Chat category channel."
@@ -190,6 +297,7 @@ class LiveChatTask(BaseCog):
     ):
         """say!"""
         try:
+            await interaction.response.defer(ephemeral=True)
             if not CONFIG.check_permission(
                 CONFIG.commands.say.permission,
                 interaction.user
@@ -197,7 +305,6 @@ class LiveChatTask(BaseCog):
                 raise MissingPermissions(
                     f"{interaction.user.mention} is missing permissions to use command."
                 )
-            await interaction.response.defer(ephemeral=True)
             await interaction.followup.send(
                 embed=discord.Embed(
                     title="Say",
@@ -211,6 +318,10 @@ class LiveChatTask(BaseCog):
                 raise InvalidChannel(
                     """Command used in invalid channel."""
                 )
+
+            if str(interaction.user.id) not in cache.terms_accepted:
+                raise TermsRejected()
+
             channel_id = self.get_server_id_by_name(interaction.channel.name)
             player = f"{re.sub(r'[^A-Za-z0-9 ]+', '', interaction.user.display_name)}"
             mentioned_user = re.compile(r'<@\d{16,20}>')
@@ -279,6 +390,21 @@ class LiveChatTask(BaseCog):
             )
 
         except (
+            TermsRejected
+        ) as e:
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title="Message Not Sent",
+                    description=(
+                        e.readable +
+                        "\n\nUpdate can take up to 5 minutes."
+                    ),
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
+        except (
             Exception
         ) as e:
             logging.error("Message not sent: %s %s %s", type(e), e, traceback.format_exc())
@@ -290,89 +416,6 @@ class LiveChatTask(BaseCog):
                 ),
                 ephemeral=True
             )
-
-    @say.error
-    async def on_say_error(
-        self,
-        interaction: discord.Interaction,
-        error: app_commands.AppCommandError
-    ):
-        """On cooldown send remaining time info message."""
-        await self.on_cooldown_response(interaction, error)
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        logging.info("Retrieving Guild: %s.", self.__cog_name__)
-        self.guild = self.client.get_guild(CONFIG.discord.guild_id)
-        if not self.guild:
-            raise SettingNotConfigured(
-                "Logs channel not configured."
-            )
-
-        # Create session
-        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
-        async with async_session() as session:
-            # Retrieve servers.
-            self.servers = await self.universal_builder.get_players_online_per_land(session)
-
-            # Close Session
-            await session.commit()
-            await session.close()
-
-        category = discord.utils.get(
-            self.guild.categories,
-            id=CONFIG.discord.live_chat_category_id
-        )
-        if not category:
-            raise SettingNotConfigured(
-                "Logs channel not configured."
-            )
-        channels = [channel.name for channel in category.channels]
-        for i, server in enumerate(self.servers):
-            channel_name = f"{server.world_name.lower()}-{server.land}".replace(" ", "-")
-            if not channel_name in channels:
-                logging.info(
-                    "Creating Missing Channel: %s, %s",
-                    channel_name,
-                    self.__cog_name__
-                )
-                try:
-                    await self.guild.create_text_channel(
-                        name=channel_name,
-                        category=category,
-                        position=i
-                    )
-                except (
-                    discord.Forbidden,
-                    discord.HTTPException,
-                    TypeError
-                ) as e:
-                    logging.error("%s: %s.", e, self.__cog_name__)
-        self.channels = category.channels
-
-        logging.info("Starting Status task: %s.", self.__cog_name__)
-        await self.client.loop.create_task(self.webserver())
-        await self.chat_server.start()
-        await self.empty_pool.start()
-
-    @tasks.loop(seconds=0.2)
-    async def empty_pool(self):
-        """Empty message pools."""
-        if len(self.received_message_pool) > 0:
-            logging.info("Received Messages: %s", len(self.received_message_pool))
-            bottom_stack = self.received_message_pool.pop(0)
-            await self.receive_message(
-                bottom_stack['channel'],
-                bottom_stack['player'],
-                bottom_stack['content']
-            )
-
-        if len(self.queued_message_pool) > 0:
-            if self.chat_client is not None:
-                if self.chat_client.closed:
-                    await self.send_message()
-            else:
-                await self.send_message()
 
     @app_commands.command(
         name="broadcast",
@@ -439,6 +482,70 @@ class LiveChatTask(BaseCog):
             ephemeral=True
         )
         logging.info("%s: %s", interaction.user.id, "Sent broadcast.")
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        logging.info("Retrieving Guild: %s.", self.__cog_name__)
+        self.guild = self.client.get_guild(CONFIG.discord.guild_id)
+        if not self.guild:
+            raise SettingNotConfigured(
+                "Logs channel not configured."
+            )
+
+        # Create session
+        async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+        async with async_session() as session:
+            # Retrieve servers.
+            self.servers = await self.universal_builder.get_players_online_per_land(session)
+
+            # Close Session
+            await session.commit()
+            await session.close()
+
+        category = discord.utils.get(
+            self.guild.categories,
+            id=CONFIG.discord.live_chat_category_id
+        )
+        if not category:
+            raise SettingNotConfigured(
+                "Logs channel not configured."
+            )
+        channels = [channel.name for channel in category.channels]
+        for i, server in enumerate(self.servers):
+            channel_name = f"{server.world_name.lower()}-{server.land}".replace(" ", "-")
+            if not channel_name in channels:
+                logging.info(
+                    "Creating Missing Channel: %s, %s",
+                    channel_name,
+                    self.__cog_name__
+                )
+                try:
+                    await self.guild.create_text_channel(
+                        name=channel_name,
+                        category=category,
+                        position=i
+                    )
+                except (
+                    discord.Forbidden,
+                    discord.HTTPException,
+                    TypeError
+                ) as e:
+                    logging.error("%s: %s.", e, self.__cog_name__)
+        self.channels = category.channels
+
+        logging.info("Starting Status task: %s.", self.__cog_name__)
+        await self.client.loop.create_task(self.webserver())
+        await self.chat_server.start()
+        await self.empty_pool.start()
+
+    @say.error
+    async def on_say_error(
+        self,
+        interaction: discord.Interaction,
+        error: app_commands.AppCommandError
+    ):
+        """On cooldown send remaining time info message."""
+        await self.on_cooldown_response(interaction, error)
 
     async def cog_unload(self) -> None:
         await self.chat_server.stop()

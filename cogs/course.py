@@ -1,4 +1,5 @@
 """Extension module for example Ping Cog with response interaction."""
+import traceback
 import logging
 from typing import Callable
 
@@ -11,8 +12,9 @@ from settings import CONFIG
 from core import BaseCog
 from core.exceptions import (
     CoroutineFailed,
-    DiscordNotRegistered,
-    MissingPermissions
+    UserNotBound,
+    MissingPermissions,
+    TermsRejected
 )
 
 from data.connector import CONN
@@ -162,14 +164,29 @@ class Course(BaseCog):
             async with async_session() as session:
                 # Check if user is registered.
                 discord_user = await self.discord_builder.select_discord_user(
-                    session, str(interaction.user.id)
+                    session,
+                    str(interaction.user.id)
                 )
                 if discord_user is None:
-                    raise DiscordNotRegistered(
+                    raise TermsRejected()                
+
+                meta = await self.discord_builder.select_meta(
+                    session,
+                    "terms"
+                )
+
+                if discord_user.terms != meta['sha']:
+                    raise TermsRejected()
+
+                if discord_user.user_id is None:
+                    raise UserNotBound(
                         "No account registered for this discord user."
                     )
 
-                user_rights = await self.user_builder.select_user_rights(session, discord_user.user_id)
+                user_rights = await self.user_builder.select_user_rights(
+                    session,
+                    discord_user.user_id
+                )
                 if not user_rights:
                     raise CoroutineFailed(
                         "Invalid rights."
@@ -225,6 +242,31 @@ class Course(BaseCog):
                     color=discord.Color.red()
                 ),
                 ephemeral=True
+            )
+
+        except (
+            TermsRejected
+        ) as e:
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Course Select Failed",
+                    description=e.readable,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
+        except (
+            Exception
+        ) as e:
+            logging.error("%s: %s %s %s", interaction.user.id, type(e), e, traceback.format_exc())
+            await interaction.response.edit_message(
+                embed=discord.Embed(
+                    title="Procesing Failed",
+                    description="Internal Error.",
+                    color=discord.Color.red()
+                ),
+                view=None
             )
 
     @course.error

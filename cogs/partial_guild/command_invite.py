@@ -17,10 +17,11 @@ from core.exceptions import (
     CharacterAlreadyInGuild,
     CharacterNotSet,
     CharacterPendingInvite,
-    DiscordNotRegistered,
+    UserNotBound,
     GuildFull,
     MissingPermissions,
-    UsersAreEqual
+    UsersAreEqual,
+    TermsRejected
 )
 from core import max_members
 
@@ -50,21 +51,34 @@ class GuildInvite():
             # Start session
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
-                # Check if sender is registered.
+                # Check if user is registered.
                 discord_sender = await self.discord_builder.select_discord_user(
-                    session, str(interaction.user.id)
+                    session,
+                    str(interaction.user.id)
                 )
+
                 if discord_sender is None:
-                    raise DiscordNotRegistered(
-                        "No account registered for this discord user."
+                    raise TermsRejected()
+
+                meta = await self.discord_builder.select_meta(
+                    session,
+                    "terms"
                 )
+
+                if discord_sender.terms != meta['sha']:
+                    raise TermsRejected()
+
+                if discord_sender.user_id is None:
+                    raise UserNotBound(
+                        "No account registered for this discord user."
+                    )
 
                 # Check if recipient is registered.
                 discord_recipient = await self.discord_builder.select_discord_user(
                     session, str(member.id)
                 )
                 if discord_recipient is None:
-                    raise DiscordNotRegistered(
+                    raise UserNotBound(
                         "Recipient discord user is not registered."
                     )
 
@@ -168,7 +182,7 @@ class GuildInvite():
             CharacterAlreadyInGuild,
             CharacterNotSet,
             CharacterPendingInvite,
-            DiscordNotRegistered,
+            UserNotBound,
             GuildFull,
             MissingPermissions,
             UsersAreEqual
@@ -184,14 +198,26 @@ class GuildInvite():
             )
 
         except (
-            Exception
+            TermsRejected
         ) as e:
-            logging.error("%s: %s %s %s", interaction.user.id, type(e), e, traceback.format_exc())
             await interaction.response.send_message(
                 embed=discord.Embed(
                     title="Invitation Failed",
-                    description="Internal Error",
+                    description=e.readable,
                     color=discord.Color.red()
                 ),
                 ephemeral=True
+            )
+
+        except (
+            Exception
+        ) as e:
+            logging.error("%s: %s %s %s", interaction.user.id, type(e), e, traceback.format_exc())
+            await interaction.response.edit_message(
+                embed=discord.Embed(
+                    title="Procesing Failed",
+                    description="Internal Error.",
+                    color=discord.Color.red()
+                ),
+                view=None
             )

@@ -17,11 +17,12 @@ from core.exceptions import (
     CharacterNotInGuild,
     CharacterNotSet,
     CoroutineFailed,
-    DiscordNotRegistered,
+    UserNotBound,
     GuildFull,
     InvalidArgument,
     MissingGuildApplications,
-    MissingPermissions
+    MissingPermissions,
+    TermsRejected
 )
 from core import max_members
 
@@ -292,12 +293,25 @@ class ApplicationList():
             async with async_session() as session:
                 # Check if user is registered.
                 discord_user = await self.discord_builder.select_discord_user(
-                    session, str(interaction.user.id)
+                    session,
+                    str(interaction.user.id)
                 )
+
                 if discord_user is None:
-                    raise DiscordNotRegistered(
-                        "No account registered for this discord user."
+                    raise TermsRejected()
+
+                meta = await self.discord_builder.select_meta(
+                    session,
+                    "terms"
                 )
+
+                if discord_user.terms != meta['sha']:
+                    raise TermsRejected()
+
+                if discord_user.user_id is None:
+                    raise UserNotBound(
+                        "No account registered for this discord user."
+                    )
 
                 if discord_user.character_id is None:
                     raise CharacterNotSet(
@@ -391,7 +405,7 @@ class ApplicationList():
                 ephemeral=True
             )
         except (
-            DiscordNotRegistered,
+            UserNotBound,
             InvalidArgument,
             MissingPermissions,
             CharacterNotInGuild,
@@ -405,6 +419,19 @@ class ApplicationList():
                 ),
                 ephemeral=True
             )
+
+        except (
+            TermsRejected
+        ) as e:
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Application Process Failed",
+                    description=e.readable,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
         except (
             CoroutineFailed
         ) as e:
@@ -417,15 +444,16 @@ class ApplicationList():
                 ),
                 ephemeral=True
             )
+
         except (
             Exception
         ) as e:
             logging.error("%s: %s %s %s", interaction.user.id, type(e), e, traceback.format_exc())
-            await interaction.response.send_message(
+            await interaction.response.edit_message(
                 embed=discord.Embed(
-                    title="Application Process Failed",
+                    title="Procesing Failed",
                     description="Internal Error.",
                     color=discord.Color.red()
                 ),
-                ephemeral=True
+                view=None
             )

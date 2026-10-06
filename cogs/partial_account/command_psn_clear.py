@@ -1,4 +1,5 @@
 """Extension module for Account Cog."""
+import traceback
 import logging
 
 import discord
@@ -10,8 +11,9 @@ from data import UserBuilder, DiscordBuilder
 from settings import CONFIG
 from core.exceptions import (
     CoroutineFailed,
-    DiscordNotRegistered,
-    MissingPermissions
+    UserNotBound,
+    MissingPermissions,
+    TermsRejected
 )
 
 class PsnClear():
@@ -36,12 +38,25 @@ class PsnClear():
             async with async_session() as session:
                 # Check if user is registered.
                 discord_user = await self.discord_builder.select_discord_user(
-                    session, str(interaction.user.id)
+                    session,
+                    str(interaction.user.id)
                 )
+
                 if discord_user is None:
-                    raise DiscordNotRegistered(
-                        "No account registered for this discord user."
+                    raise TermsRejected()
+
+                meta = await self.discord_builder.select_meta(
+                    session,
+                    "terms"
                 )
+
+                if discord_user.terms != meta['sha']:
+                    raise TermsRejected()
+
+                if discord_user.user_id is None:
+                    raise UserNotBound(
+                        "No account registered for this discord user."
+                    )
 
                 if not await self.user_builder.clear_user_psn(
                     session,
@@ -64,7 +79,7 @@ class PsnClear():
                 await session.close()
 
         except (
-            DiscordNotRegistered,
+            UserNotBound,
             MissingPermissions
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
@@ -88,4 +103,29 @@ class PsnClear():
                     color=discord.Color.red()
                 ),
                 ephemeral=True
+            )
+
+        except (
+            TermsRejected
+        ) as e:
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Psn Clear Failed",
+                    description=e.readable,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
+        except (
+            Exception
+        ) as e:
+            logging.error("%s: %s %s %s", interaction.user.id, type(e), e, traceback.format_exc())
+            await interaction.response.edit_message(
+                embed=discord.Embed(
+                    title="Procesing Failed",
+                    description="Internal Error.",
+                    color=discord.Color.red()
+                ),
+                view=None
             )

@@ -1,7 +1,7 @@
 """
 Universal Cache Class object
 """
-from typing import List
+from typing import List, Set
 
 class GuildRecruitment():
     """Recruitment Guild Cache Object"""
@@ -39,7 +39,8 @@ class Cache():
     """Cache object."""
     def __init__(self) -> None:
         self._list_guilds: List[GuildRecruitment] = None
-        self._list_guild_character_details: list[GuildCharacterDetails] = None
+        self._list_guild_character_details: List[GuildCharacterDetails] = None
+        self._list_terms_accepted: Set[str] = None
 
     @property
     def guilds(self):
@@ -66,5 +67,18 @@ class Cache():
     @guild_character_details.deleter
     def guild_character_details(self):
         del self._list_guild_character_details
+
+    @property
+    def terms_accepted(self):
+        """The list_guilds property."""
+        return self._list_terms_accepted
+
+    @terms_accepted.setter
+    def terms_accepted(self, value):
+        self._list_terms_accepted = value
+
+    @terms_accepted.deleter
+    def terms_accepted(self):
+        del self._list_terms_accepted
 
 cache = Cache()

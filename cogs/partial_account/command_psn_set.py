@@ -10,9 +10,10 @@ from data.connector import CONN
 from data import UserBuilder, DiscordBuilder
 from core.exceptions import (
     CoroutineFailed,
-    DiscordNotRegistered,
+    UserNotBound,
     MissingPermissions,
-    PsnIDAlreadyRegistered
+    PsnIDAlreadyRegistered,
+    TermsRejected
 )
 
 async def m_set_psn(
@@ -28,12 +29,9 @@ async def m_set_psn(
         async with async_session() as session:
             # Check if user is registered.
             discord_user = await discord_builder.select_discord_user(
-                session, str(interaction.user.id)
+                session,
+                str(interaction.user.id)
             )
-            if discord_user is None:
-                raise DiscordNotRegistered(
-                    "No account registered for this discord user."
-                )
 
             user = await user_builder.select_user_psn(
                 session,
@@ -68,7 +66,6 @@ async def m_set_psn(
             await session.close()
 
     except (
-        DiscordNotRegistered,
         PsnIDAlreadyRegistered
     ) as e:
         logging.warning("%s: %s", interaction.user.id, e)
@@ -92,6 +89,19 @@ async def m_set_psn(
                 color=discord.Color.red()
             ),
             ephemeral=True
+        )
+
+    except (
+        Exception
+    ) as e:
+        logging.error("%s: %s %s %s", interaction.user.id, type(e), e, traceback.format_exc())
+        await interaction.response.edit_message(
+            embed=discord.Embed(
+                title="Procesing Failed",
+                description="Internal Error.",
+                color=discord.Color.red()
+            ),
+            view=None
         )
 
 class ModalPsn(
@@ -150,11 +160,41 @@ class PsnSet():
                     f"{interaction.user.mention} is missing permissions to use command."
                 )
 
+            # Create session
+            async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
+            async with async_session() as session:
+                # Check if user is registered.
+                discord_user = await self.discord_builder.select_discord_user(
+                    session,
+                    str(interaction.user.id)
+                )
+
+                if discord_user is None:
+                    raise TermsRejected()
+
+                meta = await self.discord_builder.select_meta(
+                    session,
+                    "terms"
+                )
+
+                if discord_user.terms != meta['sha']:
+                    raise TermsRejected()
+
+                if discord_user.user_id is None:
+                    raise UserNotBound(
+                        "No account registered for this discord user."
+                    )
+
+                # Commit
+                await session.commit()
+                await session.close()
+
             await interaction.response.send_modal(
                 ModalPsn(self.user_builder, self.discord_builder)
             )
 
         except (
+            UserNotBound,
             MissingPermissions
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
@@ -165,4 +205,29 @@ class PsnSet():
                     color=discord.Color.red()
                 ),
                 ephemeral=True
+            )
+
+        except (
+            TermsRejected
+        ) as e:
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Psn Set Failed",
+                    description=e.readable,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
+        except (
+            Exception
+        ) as e:
+            logging.error("%s: %s %s %s", interaction.user.id, type(e), e, traceback.format_exc())
+            await interaction.response.edit_message(
+                embed=discord.Embed(
+                    title="Procesing Failed",
+                    description="Internal Error.",
+                    color=discord.Color.red()
+                ),
+                view=None
             )

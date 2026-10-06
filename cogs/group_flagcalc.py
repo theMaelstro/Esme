@@ -1,6 +1,6 @@
 """Extension module for GuildList Cog."""
+import traceback
 import logging
-from random import randrange
 
 import discord
 from discord.ext import commands
@@ -18,8 +18,9 @@ from core import BaseCog
 from core.exceptions import (
     CharacterNotSet,
     CoroutineFailed,
-    DiscordNotRegistered,
-    MissingPermissions
+    UserNotBound,
+    MissingPermissions,
+    TermsRejected
 )
 
 from core.binary_handler import (
@@ -247,7 +248,18 @@ class KeyFlag(BaseCog):
                 )
 
                 if discord_user is None:
-                    raise DiscordNotRegistered(
+                    raise TermsRejected()
+
+                meta = await self.discord_builder.select_meta(
+                    session,
+                    "terms"
+                )
+
+                if discord_user.terms != meta['sha']:
+                    raise TermsRejected()
+
+                if discord_user.user_id is None:
+                    raise UserNotBound(
                         "No account registered for this discord user."
                     )
 
@@ -298,10 +310,11 @@ class KeyFlag(BaseCog):
                 ),
                 ephemeral=True
             )
+
         except (
             CoroutineFailed,
             CharacterNotSet,
-            DiscordNotRegistered,
+            UserNotBound,
             MissingPermissions
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
@@ -312,6 +325,31 @@ class KeyFlag(BaseCog):
                     color=discord.Color.red()
                 ),
                 ephemeral=True
+            )
+
+        except (
+            TermsRejected
+        ) as e:
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Keyflag Failed",
+                    description=e.readable,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
+        except (
+            Exception
+        ) as e:
+            logging.error("%s: %s %s %s", interaction.user.id, type(e), e, traceback.format_exc())
+            await interaction.response.edit_message(
+                embed=discord.Embed(
+                    title="Procesing Failed",
+                    description="Internal Error.",
+                    color=discord.Color.red()
+                ),
+                view=None
             )
 
     @keyflag_set.error

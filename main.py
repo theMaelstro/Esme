@@ -52,6 +52,7 @@ class MyClient(commands.Bot):
         #await self.tree.sync(guild=MY_GUILD)
 
 intents = discord.Intents.default()
+intents.message_content = True
 client = MyClient(intents=intents)
 
 @client.event

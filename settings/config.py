@@ -73,6 +73,9 @@ class General:
     """Class representing config general settings."""
     debug: bool
     log_level: str
+    terms_of_service: str
+    terms_webhook_listen_port: int
+    terms_webhook_secret: str
 
 @dataclasses.dataclass
 class Discord:
@@ -83,6 +86,7 @@ class Discord:
     status_category_id: str
     live_chat_category_id: str
     logs_channel_id: str
+    announcement_channel_id: str
     elevated_users: list
 
 @dataclasses.dataclass
@@ -168,7 +172,10 @@ class Config:
         my_json = {
             'General': {
                 'debug': True,
-                'log_level': 'info'
+                'log_level': 'info',
+                'terms_of_service': None,
+                "terms_webhook_listen_port": None,
+                "terms_webhook_secret": None
             },
             'Discord': {
                 'token': None,
@@ -177,6 +184,7 @@ class Config:
                 'status_category_id': None,
                 'live_chat_category_id': None,
                 'logs_channel_id': None,
+                'announcement_channel_id': None,
                 'elevated_users': [
                     [0, []],
                     [1, []],
@@ -297,7 +305,10 @@ class Config:
 
             self.general = General(
                 my_json['General']['debug'],
-                my_json['General']['log_level']
+                my_json['General']['log_level'],
+                my_json['General']['terms_of_service'],
+                my_json['General']['terms_webhook_listen_port'],
+                my_json['General']['terms_webhook_secret']
             )
 
             self.discord = Discord(
@@ -307,6 +318,7 @@ class Config:
                 my_json['Discord']['status_category_id'],
                 my_json['Discord']['live_chat_category_id'],
                 my_json['Discord']['logs_channel_id'],
+                my_json['Discord']['announcement_channel_id'],
                 my_json['Discord']['elevated_users']
             )
 

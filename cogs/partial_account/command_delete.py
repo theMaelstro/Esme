@@ -13,7 +13,7 @@ from data import (
 from core.exceptions import (
     CoroutineFailed,
     CharacterNotSet,
-    DiscordNotRegistered,
+    UserNotBound,
     MissingPermissions
 )
 
@@ -53,7 +53,7 @@ class DeleteData():
                 )
 
                 if discord_user is None:
-                    raise DiscordNotRegistered(
+                    raise UserNotBound(
                         "No account registered for this discord user."
                     )
 
@@ -82,7 +82,7 @@ class DeleteData():
         except (
             CoroutineFailed,
             CharacterNotSet,
-            DiscordNotRegistered,
+            UserNotBound,
             MissingPermissions
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)

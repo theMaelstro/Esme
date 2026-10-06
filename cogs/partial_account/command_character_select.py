@@ -1,4 +1,5 @@
 """Extension module for AccountBindCredentials Cog."""
+import traceback
 import re
 import logging
 
@@ -14,8 +15,9 @@ from core.view.pagination_selector import PaginationSelector as Pagination
 from core import get_weapon_type_image_url
 from core.exceptions import (
     CoroutineFailed,
-    DiscordNotRegistered,
-    MissingPermissions
+    UserNotBound,
+    MissingPermissions,
+    TermsRejected
 )
 
 class CharacterSelect():
@@ -39,10 +41,23 @@ class CharacterSelect():
             async with async_session() as session:
                 # Check if user is registered.
                 discord_user = await self.discord_builder.select_discord_user(
-                    session, str(interaction.user.id)
+                    session,
+                    str(interaction.user.id)
                 )
+
                 if discord_user is None:
-                    raise DiscordNotRegistered(
+                    raise TermsRejected()
+
+                meta = await self.discord_builder.select_meta(
+                    session,
+                    "terms"
+                )
+
+                if discord_user.terms != meta['sha']:
+                    raise TermsRejected()
+
+                if discord_user.user_id is None:
+                    raise UserNotBound(
                         "No account registered for this discord user."
                     )
 
@@ -129,7 +144,7 @@ class CharacterSelect():
                 ).navegate()
 
         except (
-            DiscordNotRegistered,
+            UserNotBound,
             MissingPermissions
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
@@ -153,4 +168,29 @@ class CharacterSelect():
                     color=discord.Color.red()
                 ),
                 ephemeral=True
+            )
+
+        except (
+            TermsRejected
+        ) as e:
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Character Select Failed",
+                    description=e.readable,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
+        except (
+            Exception
+        ) as e:
+            logging.error("%s: %s %s %s", interaction.user.id, type(e), e, traceback.format_exc())
+            await interaction.response.edit_message(
+                embed=discord.Embed(
+                    title="Procesing Failed",
+                    description="Internal Error.",
+                    color=discord.Color.red()
+                ),
+                view=None
             )

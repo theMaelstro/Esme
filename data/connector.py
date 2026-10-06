@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import (
 from settings import CONFIG
 from data.mappings import (
     Discord,
+    DiscordMeta,
     CharacterDetails,
     GuildCharactersByGuildId,
     GuildApplicationsDetails,
@@ -60,6 +61,13 @@ class Connector:
                 await conn.commit()
 
             async with self.engine.begin() as conn:
+                # Attempt to create discord registration table.
+                logging.info("Checking if Discord Meta table exists.")
+                await conn.run_sync(DiscordMeta.__table__.create)
+                logging.info("Discord Meta Table created because it was not found.")
+                await conn.commit()
+
+            async with self.engine.begin() as conn:
                 # Attempt to create Character Details view.
                 await conn.execute(text(CharacterDetails.__query__))
                 logging.info("Character Details View prepared.")
@@ -87,10 +95,10 @@ class Connector:
             if isinstance(e.orig.__cause__, DuplicateTableError):
                 logging.info("Discord table exists, skipping.")
             else:
-                logging.error(e)
+                logging.error("Programming Error: %s %s %s", type(e), e, traceback.format_exc())
 
         except exc.SQLAlchemyError as e:
-            logging.error(e)
+            logging.error("SQLAlchemy Error: %s %s %s", type(e), e, traceback.format_exc())
 
         except Exception as e:
             logging.critical("Unhandled database error. Could not connect to postgres: %s %s %s", type(e), e, traceback.format_exc())
@@ -109,7 +117,7 @@ class Connector:
             result = await session.execute(stmt)
 
         except exc.SQLAlchemyError as e:
-            logging.error(e)
+            logging.error("SQLAlchemy Error: %s %s %s", type(e), e, traceback.format_exc())
 
     async def select_object(
         self,
@@ -125,7 +133,7 @@ class Connector:
             return result.scalar_one_or_none()
 
         except exc.SQLAlchemyError as e:
-            logging.error(e)
+            logging.error("SQLAlchemy Error: %s %s %s", type(e), e, traceback.format_exc())
 
     async def select_objects(
         self,
@@ -141,10 +149,10 @@ class Connector:
             return result.scalars().all()
 
         except exc.ProgrammingError as e:
-            logging.error(e.orig.__cause__)
+            logging.error("Programming Error: %s %s %s", type(e), e, traceback.format_exc())
 
         except exc.SQLAlchemyError as e:
-            logging.error(e)
+            logging.error("SQLAlchemy Error: %s %s %s", type(e), e, traceback.format_exc())
 
     async def update_objects(
         self,
@@ -157,7 +165,7 @@ class Connector:
             return result.rowcount
 
         except exc.SQLAlchemyError as e:
-            logging.error(e)
+            logging.error("SQLAlchemy Error: %s %s %s", type(e), e, traceback.format_exc())
         return None
 
     async def insert_objects(
@@ -170,6 +178,6 @@ class Connector:
             session.add_all(values)
 
         except exc.SQLAlchemyError as e:
-            logging.error(e)
+            logging.error("SQLAlchemy Error: %s %s %s", type(e), e, traceback.format_exc())
 
 CONN = Connector()

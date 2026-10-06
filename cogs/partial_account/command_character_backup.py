@@ -1,4 +1,5 @@
 """Extension module for SetPsn Cog."""
+import traceback
 import io
 import zipfile
 import logging
@@ -18,8 +19,9 @@ from core.exceptions import (
     CoroutineFailed,
     CommandOnCooldown,
     CharacterNotSet,
-    DiscordNotRegistered,
-    MissingPermissions
+    UserNotBound,
+    MissingPermissions,
+    TermsRejected
 )
 
 def get_days(
@@ -77,7 +79,18 @@ class CharacterBackup():
                 )
 
                 if discord_user is None:
-                    raise DiscordNotRegistered(
+                    raise TermsRejected()
+
+                meta = await self.discord_builder.select_meta(
+                    session,
+                    "terms"
+                )
+
+                if discord_user.terms != meta['sha']:
+                    raise TermsRejected()
+
+                if discord_user.user_id is None:
+                    raise UserNotBound(
                         "No account registered for this discord user."
                     )
 
@@ -161,7 +174,7 @@ class CharacterBackup():
         except (
             CommandOnCooldown,
             CharacterNotSet,
-            DiscordNotRegistered,
+            UserNotBound,
             MissingPermissions
         ) as e:
             logging.warning("%s: %s", interaction.user.id, e)
@@ -185,4 +198,29 @@ class CharacterBackup():
                     color=discord.Color.red()
                 ),
                 ephemeral=True
+            )
+
+        except (
+            TermsRejected
+        ) as e:
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title="Character Backup Failed",
+                    description=e.readable,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
+        except (
+            Exception
+        ) as e:
+            logging.error("%s: %s %s %s", interaction.user.id, type(e), e, traceback.format_exc())
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title="Procesing Failed",
+                    description="Internal Error.",
+                    color=discord.Color.red()
+                ),
+                view=None
             )

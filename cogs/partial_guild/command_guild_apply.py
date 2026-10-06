@@ -19,11 +19,12 @@ from settings import CONFIG
 from core.exceptions import (
     CharacterAlreadyInGuild,
     CharacterNotSet,
-    DiscordNotRegistered,
+    UserNotBound,
     GuildAlreadyApplied,
     GuildFull,
     GuildNameInvalid,
-    MissingPermissions
+    MissingPermissions,
+    TermsRejected
 )
 from core import max_members
 
@@ -65,14 +66,27 @@ class GuildApply():
             # Start session
             async_session = async_sessionmaker(CONN.engine, expire_on_commit=False)
             async with async_session() as session:
-                # Check if sender is registered.
+                # Check if user is registered.
                 discord_user = await self.discord_builder.select_discord_user(
-                    session, str(interaction.user.id)
+                    session,
+                    str(interaction.user.id)
                 )
+
                 if discord_user is None:
-                    raise DiscordNotRegistered(
-                        "No account registered for this discord user."
+                    raise TermsRejected()
+
+                meta = await self.discord_builder.select_meta(
+                    session,
+                    "terms"
                 )
+
+                if discord_user.terms != meta['sha']:
+                    raise TermsRejected()
+
+                if discord_user.user_id is None:
+                    raise UserNotBound(
+                        "No account registered for this discord user."
+                    )
 
                 if discord_user.character_id is None:
                     raise CharacterNotSet(
@@ -129,7 +143,7 @@ class GuildApply():
         except (
             CharacterAlreadyInGuild,
             CharacterNotSet,
-            DiscordNotRegistered,
+            UserNotBound,
             GuildAlreadyApplied,
             GuildFull,
             GuildNameInvalid,
@@ -143,6 +157,31 @@ class GuildApply():
                     color=discord.Color.red()
                 ),
                 ephemeral=True
+            )
+
+        except (
+            TermsRejected
+        ) as e:
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Guild Apply Failed",
+                    description=e.readable,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
+        except (
+            Exception
+        ) as e:
+            logging.error("%s: %s %s %s", interaction.user.id, type(e), e, traceback.format_exc())
+            await interaction.response.edit_message(
+                embed=discord.Embed(
+                    title="Procesing Failed",
+                    description="Internal Error.",
+                    color=discord.Color.red()
+                ),
+                view=None
             )
 
     async def guild_apply_autocomplete(

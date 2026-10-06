@@ -1,4 +1,5 @@
 """Extension module for GuildApplication Cog."""
+import traceback
 import logging
 
 import discord
@@ -12,10 +13,11 @@ from data import (
 
 from settings import CONFIG
 from core.exceptions import (
-    DiscordNotRegistered,
+    UserNotBound,
     GuildFull,
     InvalidArgument,
-    MissingPermissions
+    MissingPermissions,
+    TermsRejected
 )
 from core import max_members
 
@@ -46,12 +48,25 @@ class ApplicationResolve():
             async with async_session() as session:
                 # Check if user is registered.
                 discord_user = await self.discord_builder.select_discord_user(
-                    session, str(interaction.user.id)
+                    session,
+                    str(interaction.user.id)
                 )
+
                 if discord_user is None:
-                    raise DiscordNotRegistered(
-                        "No account registered for this discord user."
+                    raise TermsRejected()
+
+                meta = await self.discord_builder.select_meta(
+                    session,
+                    "terms"
                 )
+
+                if discord_user.terms != meta['sha']:
+                    raise TermsRejected()
+
+                if discord_user.user_id is None:
+                    raise UserNotBound(
+                        "No account registered for this discord user."
+                    )
 
                 # Check if user is eleveated guild member.
                 guild_application = await self.guild_builder.select_guild_application_by_id(
@@ -128,7 +143,7 @@ class ApplicationResolve():
                 await session.close()
 
         except (
-            DiscordNotRegistered,
+            UserNotBound,
             GuildFull,
             InvalidArgument,
             MissingPermissions
@@ -141,4 +156,29 @@ class ApplicationResolve():
                     color=discord.Color.red()
                 ),
                 ephemeral=True
+            )
+
+        except (
+            TermsRejected
+        ) as e:
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="Application Process Failed",
+                    description=e.readable,
+                    color=discord.Color.red()
+                ),
+                ephemeral=True
+            )
+
+        except (
+            Exception
+        ) as e:
+            logging.error("%s: %s %s %s", interaction.user.id, type(e), e, traceback.format_exc())
+            await interaction.response.edit_message(
+                embed=discord.Embed(
+                    title="Procesing Failed",
+                    description="Internal Error.",
+                    color=discord.Color.red()
+                ),
+                view=None
             )

@@ -29,7 +29,10 @@ class PlayersOnlineTask(BaseCog):
         self.guild: discord.Guild = None
         self.universal_builder = UniversalBuilder()
 
-    @tasks.loop(minutes=15)
+    @tasks.loop(
+        minutes=15,
+        reconnect=True
+    )
     async def update_status_channels(self):
         """Display online players."""
         logging.info("Updating Player Online Status channels: %s.", self.__cog_name__)
