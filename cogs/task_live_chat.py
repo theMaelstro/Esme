@@ -209,86 +209,87 @@ class LiveChatTask(BaseCog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         """Catch messages from chat category."""
-        if message.author.id != self.client.user.id:
-            if message.channel in self.channels and self.client.intents.message_content is True:
-                if str(message.author.id) not in cache.terms_accepted:
-                    await message.channel.send(
-                        embed=discord.Embed(
-                            title="Message not sent",
-                            description= (
-                                "To be able to send messages review `/terms` command." +
-                                "\n\nUpdate can take up to 5 minutes."
-                            ),
-                            color=discord.Color.red()
-                        ).set_author(name=message.author, icon_url=message.author.display_avatar)
-                    )
-                else:
-                    logging.info("Received Message")
-                    channel_id = self.get_server_id_by_name(message.channel.name)
-
-                    player = f"{re.sub(r'[^A-Za-z0-9 ]+', '', message.author.display_name)}"
-                    mentioned_user = re.compile(r'<@\d{16,20}>')
-                    emoji = re.compile(r'<:\w+:\d{16,20}>')
-                    content = message.content
-
-                    # User mentions
-                    while (mu := mentioned_user.search(content)) is not None:
-                        raw_mention = mu.group()
-                        user_id = re.sub("[^0-9]", "", raw_mention)
-                        user_mention: discord.User = message.guild.get_member(int(user_id))
-                        if user_mention is not None:
-                            content = content.replace(raw_mention, user_mention.display_name)
-                        else:
-                            content = content.replace(raw_mention, "mentioned")
-
-                    # Emojis
-                    while (me := emoji.search(content)) is not None:
-                        raw_mention = me.group()
-                        content = content.replace(raw_mention, raw_mention.split(":")[1])
-
-                    content = " ".join(
-                        f"{re.sub(
-                            r'[^A-Za-z0-9 ]+',
-                            '',
-                            content
-                        )}".split()
-                    )
-
-                    if player.strip(" ") == "" or content.strip(" ") == "":
+        if self.client.intents.message_content:
+            if message.author.id != self.client.user.id:
+                if message.channel in self.channels:
+                    if str(message.author.id) not in cache.terms_accepted:
                         await message.channel.send(
                             embed=discord.Embed(
-                                title="Warning",
+                                title="Message not sent",
                                 description= (
-                                    "Message was not sent.\n"
-                                    "Check if your server name or message content is"
-                                    " not made up of just special characters."
+                                    "To be able to send messages review `/terms` command." +
+                                    "\n\nUpdate can take up to 5 minutes."
                                 ),
                                 color=discord.Color.red()
                             ).set_author(name=message.author, icon_url=message.author.display_avatar)
                         )
-                        return
-                    if len(content) > 92:
-                        content = content[:92]
-                        await message.channel.send(
-                            embed=discord.Embed(
-                                title="Warning",
-                                description= (
-                                    "Parsed message is too long.\n"
-                                    "Slice will be used.\n"
-                                    f"```{content}```"
-                                ),
-                                color=discord.Color.blue()
-                            ).set_author(name=message.author, icon_url=message.author.display_avatar)
+                    else:
+                        logging.info("Received Message")
+                        channel_id = self.get_server_id_by_name(message.channel.name)
+
+                        player = f"{re.sub(r'[^A-Za-z0-9 ]+', '', message.author.display_name)}"
+                        mentioned_user = re.compile(r'<@\d{16,20}>')
+                        emoji = re.compile(r'<:\w+:\d{16,20}>')
+                        content = message.content
+
+                        # User mentions
+                        while (mu := mentioned_user.search(content)) is not None:
+                            raw_mention = mu.group()
+                            user_id = re.sub("[^0-9]", "", raw_mention)
+                            user_mention: discord.User = message.guild.get_member(int(user_id))
+                            if user_mention is not None:
+                                content = content.replace(raw_mention, user_mention.display_name)
+                            else:
+                                content = content.replace(raw_mention, "mentioned")
+
+                        # Emojis
+                        while (me := emoji.search(content)) is not None:
+                            raw_mention = me.group()
+                            content = content.replace(raw_mention, raw_mention.split(":")[1])
+
+                        content = " ".join(
+                            f"{re.sub(
+                                r'[^A-Za-z0-9 ]+',
+                                '',
+                                content
+                            )}".split()
                         )
 
-                    self.queued_message_pool.append(
-                    {
-                        "interaction": "channel",
-                        "channel": channel_id,
-                        "player": player,
-                        "content": content,
-                        "message": message
-                    })
+                        if player.strip(" ") == "" or content.strip(" ") == "":
+                            await message.channel.send(
+                                embed=discord.Embed(
+                                    title="Warning",
+                                    description= (
+                                        "Message was not sent.\n"
+                                        "Check if your server name or message content is"
+                                        " not made up of just special characters."
+                                    ),
+                                    color=discord.Color.red()
+                                ).set_author(name=message.author, icon_url=message.author.display_avatar)
+                            )
+                            return
+                        if len(content) > 92:
+                            content = content[:92]
+                            await message.channel.send(
+                                embed=discord.Embed(
+                                    title="Warning",
+                                    description= (
+                                        "Parsed message is too long.\n"
+                                        "Slice will be used.\n"
+                                        f"```{content}```"
+                                    ),
+                                    color=discord.Color.blue()
+                                ).set_author(name=message.author, icon_url=message.author.display_avatar)
+                            )
+
+                        self.queued_message_pool.append(
+                        {
+                            "interaction": "channel",
+                            "channel": channel_id,
+                            "player": player,
+                            "content": content,
+                            "message": message
+                        })
 
     @app_commands.command(
         name="say",
