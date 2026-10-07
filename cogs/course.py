@@ -1,4 +1,4 @@
-"""Extension module for example Ping Cog with response interaction."""
+"""Extension module to manage Courses."""
 import traceback
 import logging
 from typing import Callable
@@ -280,5 +280,5 @@ class Course(BaseCog):
 
 async def setup(client:commands.Bot) -> None:
     """Initialize cog."""
-    if CONFIG.commands.ping.enabled:
+    if CONFIG.commands.account_course.enabled:
         await client.add_cog(Course(client))
